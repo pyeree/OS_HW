@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -g
 TARGET = program
-OBJS = main.o ls.o clear.o
+OBJS = main.o ls.o clear.o pwd.o
 
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^
@@ -13,6 +13,9 @@ ls.o: ls.c header.h tree_io.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clear.o: clear.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+pwd.o: pwd.c header.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:	
