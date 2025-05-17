@@ -55,14 +55,14 @@ void ls_l(DirectoryTree* dTree) {
         tmpN = tmpN->left;
         while (tmpN->right != NULL) {
             printf("%c", tmpN->type);
-            PrintPerm(tmpN);
+            // PrintPerm(tmpN);
             printf(" %d %d %d", tmpN->size, tmpN->UID, tmpN->GID);
             printf(" %d(Month) %d(day) %d(hour) %d(min) ", tmpN->month, tmpN->day, tmpN->hour, tmpN->minute);
             printf("%s\n", tmpN->name);
             tmpN = tmpN->right;
         }
         printf("%c", tmpN->type);
-        PrintPerm(tmpN);
+        // PrintPerm(tmpN);
         printf(" %d %d %d", tmpN->size, tmpN->UID, tmpN->GID);
         printf(" %d(Month) %d(day) %d(hour) %d(min) ", tmpN->month, tmpN->day, tmpN->hour, tmpN->minute);
         printf("%s\n", tmpN->name);
@@ -79,14 +79,14 @@ void ls_al(DirectoryTree* dTree) {
         tmpN = tmpN->left;
         while (tmpN->right != NULL) {
             printf("%c", tmpN->type);
-            PrintPerm(tmpN);
+            // PrintPerm(tmpN);
             printf(" %d %d %d", tmpN->size, tmpN->UID, tmpN->GID);
             printf(" %d(Month) %d(day) %d(hour) %d(min) ", tmpN->month, tmpN->day, tmpN->hour, tmpN->minute);
             printf("%s\n", tmpN->name);
             tmpN = tmpN->right;
         }
         printf("%c", tmpN->type);
-        PrintPerm(tmpN);
+        // PrintPerm(tmpN);
         printf(" %d %d %d", tmpN->size, tmpN->UID, tmpN->GID);
         printf(" %d(Month) %d(day) %d(hour) %d(min) ", tmpN->month, tmpN->day, tmpN->hour, tmpN->minute);
         printf("%s\n", tmpN->name);

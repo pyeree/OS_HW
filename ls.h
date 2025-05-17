@@ -1,15 +1,14 @@
-// ls.h
 #ifndef LS_H
 #define LS_H
 
-#include "header.h" // DirectoryTree ±¸Á¶Ã¼ Á¤ÀÇ¸¦ À§ÇØ Æ÷ÇÔ
+#include "header.h" // DirectoryTree ï¿½ï¿½ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½Ç¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
-// ls.c¿¡ Á¤ÀÇµÈ ÇÔ¼öÀÇ ¼±¾ð
+// ls.cï¿½ï¿½ ï¿½ï¿½ï¿½Çµï¿½ ï¿½Ô¼ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 void ls(DirectoryTree* dTree);
 void ls_a(DirectoryTree* dTree);
 void ls_l(DirectoryTree* dTree);
 void ls_al(DirectoryTree* dTree);
 
-// ls ±â´É °ü·Ã ±¸Á¶Ã¼, »ó¼ö µîÀÇ ¼±¾ð (ÇÊ¿äÇÑ °æ¿ì)
+// ls ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ã¼, ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½Ê¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½)
 
 #endif

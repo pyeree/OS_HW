@@ -1,12 +1,23 @@
 #include "header.h"
 #include "tree_io.h"
+#include "cat.h"
+// #include "cd.h"
+// #include "chmod.h"
+#include "clear.h"
+// #include "diff.h"
+#include "ls.h"
+// #include "mkdir.h"
+// #include "mv.h"
+// #include "pwd.h"
+// #include "touch.h"
+// #include "whereis.h"
 
 #define SAVE_FILE "tree_state.txt"
 
 DirectoryTree dTree;
 
 void initialize_directory_tree(DirectoryTree* dTree) {
-    TreeNode* root = malloc(sizeof(TreeNode)); // ·çÆ® ³ëµå ÃÊ±âÈ­
+    TreeNode* root = malloc(sizeof(TreeNode)); // ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­
     strcpy(root->name, "/");
     root->type = 'd';
     root->left = NULL;
@@ -32,13 +43,12 @@ int main() {
 
     load_tree_from_file(&dTree, SAVE_FILE);
     if (dTree.root == NULL) {
-        initialize_directory_tree(&dTree); // ÆÄÀÏÀÌ ¾ø°Å³ª ·çÆ®°¡ NULLÀÏ °æ¿ì ÃÊ±âÈ­
+        initialize_directory_tree(&dTree); // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Å³ï¿½ ï¿½ï¿½Æ®ï¿½ï¿½ NULLï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­
     }
     else {
-
-        printf("Directory tree loaded successfully from %s\n", SAVE_FILE); // ¼öÁ¤µÈ ºÎºĞ: ÆÄÀÏ ·Îµå ¼º°ø ¸Ş½ÃÁö
-
+        printf("Directory tree loaded successfully from %s\n", SAVE_FILE); // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Îºï¿½: ï¿½ï¿½ï¿½ï¿½ ï¿½Îµï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ş½ï¿½ï¿½ï¿½
     }
+    printf("Initial current path: %s\n", dTree.current_path);
     char command[256];
     while (1) {
         printf("%s ", dTree.current_path);
@@ -57,32 +67,75 @@ int main() {
         char* cmd = strtok(command, " ");
         if (cmd == NULL) continue;
 
-        if (strcmp(cmd, "ls") == 0) {
-            char* arg = strtok(NULL, " ");
+        if (strcmp(cmd, "cat") == 0) {
+            char *arg = strtok(NULL, " ");
+            if (arg != NULL) {
+                cat(&dTree, arg);
+                save_tree_to_file(&dTree, SAVE_FILE); // í•­ìƒ ëª…ë ¹ì–´ ì‹¤í–‰ í›„ íŠ¸ë¦¬ ì €ì¥
+            } else {
+                printf("cat: missing argument\n");
+                printf("Try 'man cat' for more information.\n");
+            }
+        } 
+        // else if (strcmp(cmd, "cd") == 0)
+        // else if (strcmp(cmd, "chmod") == 0)
+        else if (strcmp(cmd, "clear") == 0) { clear(); }
+        // else if (strcmp(cmd, "diff") == 0)
+        else if (strcmp(cmd, "ls") == 0) {
+            char *arg = strtok(NULL, " ");
             if (arg == NULL) {
                 ls(&dTree);
-            }
-            else if (strcmp(arg, "-a") == 0) {
+            } else if (strcmp(arg, "-a") == 0) {
                 ls_a(&dTree);
-            }
-            else if (strcmp(arg, "-l") == 0) {
+            } else if (strcmp(arg, "-l") == 0) {
                 ls_l(&dTree);
-            }
-            else if (strcmp(arg, "-al") == 0) {
+            } else if (strcmp(arg, "-al") == 0) {
                 ls_al(&dTree);
-            }
-            else {
+            } else {
                 printf("ls: missing operand\n");
                 printf("Try 'man ls' for more information.\n");
             }
-        }
-        else if (strcmp(cmd, "clear") == 0)
-        {
-            clear();
-        }
+        } 
+        /*
+        else if (strcmp(cmd, "mkdir") == 0) {
+            if (argc != 0) {
+                char *argv[256];
+                argv[0] = "mkdir";
+                for (int d = 1; d < argc + 1; d++) {
+                argv[d] = strtok(NULL, " ");
+                }
+
+                a(argc, argv);
+                save_tree_to_file(&dTree, SAVE_FILE); // í•­ìƒ ëª…ë ¹ì–´ ì‹¤í–‰ í›„ íŠ¸ë¦¬ ì €ì¥
+            }
+            else {
+                printf("mkdir: missing operand\n");
+                printf("Try 'man mkdir' for more information.\n");
+            }
+        } */
+        /*
+        else if (strcmp(cmd, "mv") == 0) {
+            char *src = strtok(NULL, " ");
+            char *dest = strtok(NULL, " ");
+            if (src != NULL && dest != NULL) {
+                mv(&dTree, src, dest);
+                save_tree_to_file(&dTree, SAVE_FILE);
+            } else {
+                printf("mv: missing operand\n");
+                printf("Try 'man mv' for more information.\n");
+            }
+        } */
+        /*
+        else if (strcmp(cmd, "pwd") == 0){
+            load_tree_from_file(&dTree, "filesystem.txt");  // íŒŒì¼ì—ì„œ íŠ¸ë¦¬ ë¡œë“œ
+            get_pwd(&dTree);  // íŠ¸ë¦¬ì—ì„œ í˜„ì¬ ê²½ë¡œ ì¶œë ¥
+        } */
+        // else if (strcmp(cmd, "touch") == 0)
+        // else if (strcmp(cmd, "whereis") == 0)
+        
         else if (strcmp(cmd, "exit") == 0)
         {
-            save_tree_to_file(&dTree, SAVE_FILE); // Á¾·á ½Ã Æ®¸® ÀúÀå
+            save_tree_to_file(&dTree, SAVE_FILE); // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             break;
         }
         else

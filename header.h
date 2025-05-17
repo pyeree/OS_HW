@@ -1,7 +1,6 @@
 #ifndef HEADER_H
 #define HEADER_H
 
-#pragma once
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -40,7 +39,7 @@ typedef struct TreeNode {
 typedef struct DirectoryTree {
 	TreeNode* root;
 	TreeNode* current;
-	char current_path[MAX_NAME_LENGTH * 10]; // °æ·Î ÀúÀåÀ» À§ÇÑ º¯¼ö
+	char current_path[MAX_NAME_LENGTH * 10]; // ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 } DirectoryTree;
 
 typedef struct ThreadArg {
@@ -54,10 +53,5 @@ typedef struct UserList {
 	int Group_ID;
 	struct UserList* next;
 } UserList;
-
-typedef struct {
-	char alias[100];
-	char command[100];
-} AliasEntry;
 
 #endif // HEADER_H

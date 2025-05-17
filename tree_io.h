@@ -1,4 +1,3 @@
-// tree_io.h
 #ifndef TREE_IO_H
 #define TREE_IO_H
 
