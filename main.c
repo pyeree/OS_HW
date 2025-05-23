@@ -7,8 +7,8 @@
 #include "diff.h"
 #include "ls.h"
 // #include "mkdir.h"
-#include "mv.h"
-// #include "pwd.h"
+// #include "mv.h"
+#include "pwd.h"
 #include "touch.h"
 #include "whereis.h"
 
@@ -39,6 +39,25 @@ void initialize_directory_tree(DirectoryTree* dTree) {
     strcpy(dTree->current_path, "team4@ubuntu: ");
 }
 
+/*
+int a(int argc, char *argv[]) {
+  if (argc < 1) {
+    fprintf(stderr, "Usage: %s [-p mode] dirname...\n", argv[0]);
+    exit(EXIT_FAILURE);
+  }
+
+  if (!strcmp(argv[1], "-p") && argc == 4) {
+    int mode =
+        (argv[3][0] - '0') * 64 + (argv[3][1] - '0') * 8 + (argv[3][2] - '0');
+    Omkdir_multithreaded(&dTree, argv[2], mode);
+  } else {
+    int mode = 0755; // Default mode if not specified
+    create_directories_multithreaded(&dTree, &argv[1], argc, mode);
+  }
+
+  TreeNode *node = dTree.root->left;
+} */
+
 int main() {
 
     load_tree_from_file(&dTree, SAVE_FILE);
@@ -56,10 +75,10 @@ int main() {
         fgets(command, sizeof(command), stdin);
         command[strcspn(command, "\n")] = '\0'; // 개행 문자 제거
 
-        int argc = 0;
-        int length = strlen(command);
+        int argc = 0; // 인자 개수
+        int length = strlen(command); // 명령어 길이
         for (int i = 0; i < length; i++) {
-            if (command[i] == ' ') {
+            if (command[i] == ' ') { // 공백을 기준으로 인자 개수 세기
                 argc++;
             }
         }
@@ -67,14 +86,15 @@ int main() {
         char* cmd = strtok(command, " ");
         if (cmd == NULL) continue;
 
+        // 명령어 처리
         if (strcmp(cmd, "cat") == 0) {
             char *arg = strtok(NULL, " ");
             if (arg != NULL) {
                 cat(&dTree, arg);
-                save_tree_to_file(&dTree, SAVE_FILE); // 항상 명령어 실행 후 트리 저장
+                save_tree_to_file(&dTree, SAVE_FILE);
             } else {
                 printf("cat: missing argument\n");
-                printf("Try 'man cat' for more information.\n");
+                printf("사용법: cat <filename>\n")
             }
         } 
         else if (strcmp(cmd, "cd") == 0) {
@@ -86,7 +106,10 @@ int main() {
 		        printf("cd: missing argument\n");
 		    }
         }
-        // else if (strcmp(cmd, "chmod") == 0)
+        /*
+        else if (strcmp(cmd, "chmod") == 0) {
+            run_chmod(&dTree, strtok(NULL, ""));
+        } */
         else if (strcmp(cmd, "clear") == 0) { clear(); }
         else if (strcmp(cmd, "diff") == 0) {
             char *arg1 = strtok(NULL, " ");
@@ -113,23 +136,7 @@ int main() {
                 printf("Try 'man ls' for more information.\n");
             }
         } 
-        /*
-        else if (strcmp(cmd, "mkdir") == 0) {
-            if (argc != 0) {
-                char *argv[256];
-                argv[0] = "mkdir";
-                for (int d = 1; d < argc + 1; d++) {
-                argv[d] = strtok(NULL, " ");
-                }
-
-                a(argc, argv);
-                save_tree_to_file(&dTree, SAVE_FILE); // 항상 명령어 실행 후 트리 저장
-            }
-            else {
-                printf("mkdir: missing operand\n");
-                printf("Try 'man mkdir' for more information.\n");
-            }
-        } */
+        // else if (strcmp(cmd, "mkdir") == 0)
        /*
         else if (strcmp(cmd, "mv") == 0) {
             char *src = strtok(NULL, " ");
@@ -142,11 +149,10 @@ int main() {
                 printf("Try 'man mv' for more information.\n");
             }
         } */
-        /*
         else if (strcmp(cmd, "pwd") == 0) {
-            load_tree_from_file(&dTree, "filesystem.txt");  // 파일에서 트리 로드
+            load_tree_from_file(&dTree, "tree_state.txt");  // 파일에서 트리 로드
             get_pwd(&dTree);  // 트리에서 현재 경로 출력
-        } */
+        }
         else if (strcmp(cmd, "touch") == 0) {
             char *arg = strtok(NULL, " ");
             if (arg != NULL) {
@@ -165,7 +171,7 @@ int main() {
             }
         }
         else if (strcmp(cmd, "exit") == 0) {
-            save_tree_to_file(&dTree, SAVE_FILE); // ���� �� Ʈ�� ����
+            save_tree_to_file(&dTree, SAVE_FILE);
             break;
         }
         else {

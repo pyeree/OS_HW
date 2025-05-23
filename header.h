@@ -39,7 +39,7 @@ typedef struct TreeNode {
 typedef struct DirectoryTree {
 	TreeNode* root;
 	TreeNode* current;
-	char current_path[MAX_NAME_LENGTH * 10]; // ��� ������ ���� ����
+	char current_path[MAX_NAME_LENGTH * 10];
 } DirectoryTree;
 
 typedef struct ThreadArg {

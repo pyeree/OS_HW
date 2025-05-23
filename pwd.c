@@ -1,11 +1,7 @@
 #include "header.h"
 #include "pwd.h"
+#include "tree_io.h"
 #include <stdbool.h>  // bool 타입 사용을 위해
-
-typedef struct {
-    int top;
-    char* path[MAXB];
-} Stack;
 
 int init_stack(Stack* s) {
     if (s == NULL) {
@@ -43,9 +39,9 @@ char* pop(Stack* s) {
 int get_pwd(DirectoryTree *dTree) {
     Stack buff;
     init_stack(&buff);
-    
+
     TreeNode *current = dTree->current;
-    
+
     // 루트 디렉터리까지 올라갈 때까지 반복
     while (current->parent != NULL) {
         push(&buff, current->name);
@@ -66,11 +62,4 @@ int get_pwd(DirectoryTree *dTree) {
     }
 
     return 0;
-}
-
-int main() {
-    DirectoryTree dTree;
-    load_tree_from_file(&dTree, "filesystem.txt");  // 파일에서 트리 로드
-    
-    return get_pwd(&dTree);  // 트리에서 현재 경로 출력
 }

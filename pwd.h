@@ -1,7 +1,12 @@
 #pragma once
 #include "header.h"
+#include <stdbool.h>
+#include "tree_io.h"
 
-typedef struct {} Stack;
+typedef struct {
+    int top;
+    char* path[MAXB];
+} Stack;
 
 int init_stack(Stack* s);
 bool IsFull(Stack* s);
