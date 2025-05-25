@@ -14,7 +14,7 @@
 #include <unistd.h>
 
 #define MAX_NAME_LENGTH 255
-#define MAX_PATH_LENGTH 255
+#define MAX_PATH_LENGTH 1024
 
 #define MAXB 1024
 
