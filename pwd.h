@@ -4,17 +4,17 @@
 
 #define MAX_PATH_LENGTH 1024
 
+// 스택 타입
 typedef struct {
-    char* path[MAX_PATH_LENGTH];
     int   top;
+    char* path[MAX_PATH_LENGTH];
 } Stack;
 
-// 스택 헬퍼
-int    init_stack       (Stack* s);
-bool   IsEmpty          (Stack* s);
-int    push             (Stack* s, const char* dir);
-char*  pop              (Stack* s);
+// 스택 함수 (pwd.c 에서만 구현)
+int     init_stack(Stack* s);
+bool    IsEmpty   (Stack* s);
+int     push      (Stack* s, const char* dir);
+char*   pop       (Stack* s);
 
-// dTree->current 를 기준으로 dTree->current_path 에
-// 절대경로 문자열을 만들어 저장
-void   update_current_path(DirectoryTree *dTree);
+// 트리의 current 노드로부터 current_path 를 생성·갱신
+void    update_current_path(DirectoryTree *dTree);
