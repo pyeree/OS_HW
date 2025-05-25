@@ -16,3 +16,4 @@ int    init_stack(Stack* s);
 int    is_empty(Stack* s);
 int    push(Stack* s, const char* dir);
 char*  pop(Stack* s);
+int get_pwd(DirectoryTree *dTree);

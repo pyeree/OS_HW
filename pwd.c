@@ -1,52 +1,54 @@
 #include "pwd.h"
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-int init_stack(Stack* s) {
+#define MAX_DEPTH 1024
+
+// 간단한 스택 구현
+typedef struct {
+    char *items[MAX_DEPTH];
+    int   top;
+} Stack;
+
+static void init_stack(Stack *s) {
     s->top = -1;
+}
+static int push(Stack *s, const char *name) {
+    if (s->top + 1 >= MAX_DEPTH) return -1;
+    s->items[++s->top] = strdup(name);
     return 0;
 }
-
-bool IsEmpty(Stack* s) {
-    return s->top == -1;
-}
-
-int push(Stack* s, const char* dir) {
-    s->path[++(s->top)] = strdup(dir);
-    return 0;
-}
-
-char* pop(Stack* s) {
-    if (IsEmpty(s)) return NULL;
-    return s->path[(s->top)--];
+static char *pop(Stack *s) {
+    if (s->top < 0) return NULL;
+    return s->items[s->top--];
 }
 
 void update_current_path(DirectoryTree *dTree) {
-    Stack buff;
-    init_stack(&buff);
+    Stack stk;
+    init_stack(&stk);
 
-    // 1) 현재 노드에서 루트까지 올라가며 이름을 스택에 쌓고
+    // 1) current 에서 루트까지 올라가며 이름을 스택에 쌓음
     TreeNode *cur = dTree->current;
     while (cur->parent) {
-        push(&buff, cur->name);
+        push(&stk, cur->name);
         cur = cur->parent;
     }
 
     // 2) 스택에서 꺼내면서 "/"로 이어 붙이기
     char path[MAX_PATH_LENGTH] = "";
-    if (IsEmpty(&buff)) {
-        // 루트에 있다면 그냥 "/"
+    if (stk.top < 0) {
+        // 루트 디렉토리
         strcpy(path, "/");
     } else {
-        while (!IsEmpty(&buff)) {
-            char *name = pop(&buff);
+        char *seg;
+        while ((seg = pop(&stk)) != NULL) {
             strcat(path, "/");
-            strcat(path, name);
-            free(name);
+            strcat(path, seg);
+            free(seg);
         }
     }
 
-    // 3) 최종 결과를 dTree->current_path 에 복사
-    strncpy(dTree->current_path, path, sizeof(dTree->current_path));
+    // 3) current_path 에 복사
+    strncpy(dTree->current_path, path, sizeof(dTree->current_path)-1);
+    dTree->current_path[sizeof(dTree->current_path)-1] = '\0';
 }
