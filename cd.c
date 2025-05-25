@@ -5,10 +5,7 @@
 void cd(DirectoryTree *dTree, const char *path) {
     if (strcmp(path, "/") == 0) {
         dTree->current = dTree->root;
-        strcpy(dTree->current_path, "team4@ubuntu: /");
-        return;
-    }
-    if (strcmp(path, "..") == 0) {
+    } else if (strcmp(path, "..") == 0) {
         if (dTree->current->parent != NULL) {
             dTree->current = dTree->current->parent;
         }
@@ -26,17 +23,19 @@ void cd(DirectoryTree *dTree, const char *path) {
             return;
         }
     }
-    //char full_path[1024] = "";
-    TreeNode *cur = dTree->current;
+
+    // 경로 문자열 조립 (루트 기준으로)
     char temp[1024] = "";
+    TreeNode *cur = dTree->current;
     while (cur != NULL && cur->parent != NULL) {
         char segment[MAX_NAME_LENGTH + 2];
         snprintf(segment, sizeof(segment), "/%s", cur->name);
-        strcat(segment, temp);
-        strcpy(temp, segment);
+        memmove(temp + strlen(segment), temp, strlen(temp) + 1); // 오른쪽으로 밀기
+        memcpy(temp, segment, strlen(segment));
         cur = cur->parent;
     }
-    if (strlen(temp) == 0)
-        strcpy(temp, "/");
-    snprintf(dTree->current_path, sizeof(dTree->current_path), "@ubuntu: %s", temp);
+
+    if (strlen(temp) == 0) strcpy(temp, "/");
+
+    snprintf(dTree->current_path, MAX_PATH_LENGTH, "team4@ubuntu: %s", temp);
 }
