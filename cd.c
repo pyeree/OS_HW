@@ -24,7 +24,7 @@ void cd(DirectoryTree *dTree, const char *path) {
         }
     }
 
-    // 경로 문자열 조립 (루트 기준으로)
+    // 현재 경로 재조립
     char temp[1024] = "";
     TreeNode *cur = dTree->current;
     while (cur != NULL && cur->parent != NULL) {
@@ -35,7 +35,10 @@ void cd(DirectoryTree *dTree, const char *path) {
         cur = cur->parent;
     }
 
-    if (strlen(temp) == 0) strcpy(temp, "/");
+    if (strlen(temp) == 0) {
+        strcpy(temp, "/");
+    }
 
-    snprintf(dTree->current_path, MAX_PATH_LENGTH, "team4@ubuntu: %s", temp);
+    // 안전하게 current_path 설정 (경고 제거)
+    snprintf(dTree->current_path, sizeof(dTree->current_path), "team4@ubuntu: %s", temp);
 }
