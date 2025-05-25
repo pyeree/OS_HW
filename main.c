@@ -94,7 +94,7 @@ int main() {
                 save_tree_to_file(&dTree, SAVE_FILE);
             } else {
                 printf("cat: missing argument\n");
-                printf("사용법: cat <filename>\n")
+                printf("사용법: cat <filename>\n");
             }
         } 
         else if (strcmp(cmd, "cd") == 0) {
