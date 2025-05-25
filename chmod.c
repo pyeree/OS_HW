@@ -1,4 +1,4 @@
-//chmod.c
+// chmod.c
 #include "chmod.h"
 #include <string.h>
 #include <stdio.h>
@@ -10,7 +10,6 @@ void run_chmod(DirectoryTree* tree, const char* arg) {
         return;
     }
 
-    // 인자 분리
     char input[256];
     strncpy(input, arg, sizeof(input));
     input[sizeof(input) - 1] = '\0';
@@ -29,15 +28,14 @@ void run_chmod(DirectoryTree* tree, const char* arg) {
         return;
     }
 
-    // 현재 디렉토리에서 탐색
-    TreeNode* node = tree->current->children;
+    TreeNode* node = tree->current->left;
     while (node != NULL) {
-        if (strcmp(node->name, filename) == 0) {
+        if (strcmp(node->name, filename) == 0 && node->type == 'f') {
             node->mode = mode;
             printf("Permissions for '%s' changed to %03d\n", filename, mode);
             return;
         }
-        node = node->next_sibling;
+        node = node->right;
     }
 
     printf("File '%s' not found in current directory.\n", filename);
