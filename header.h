@@ -14,6 +14,8 @@
 #include <unistd.h>
 
 #define MAX_NAME_LENGTH 255
+#define MAX_PATH_LENGTH 255
+
 #define MAXB 1024
 
 typedef struct TreeNode {

@@ -1,7 +1,10 @@
 #include "header.h"
 #include "pwd.h"
 #include "tree_io.h"
-#include <stdbool.h>  // bool 타입 사용을 위해
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 int init_stack(Stack* s) {
     if (s == NULL) {
@@ -42,24 +45,31 @@ int get_pwd(DirectoryTree *dTree) {
 
     TreeNode *current = dTree->current;
 
-    // 루트 디렉터리까지 올라갈 때까지 반복
+    // 루트까지 올라가면서 경로 스택에 저장
     while (current->parent != NULL) {
         push(&buff, current->name);
         current = current->parent;
     }
 
-    // 루트 경로인 "/" 출력
-    if (IsEmpty(&buff)) {
-        printf("/\n");
-    } else {
-        // 스택에 저장된 경로를 출력 (루트부터 현재까지)
-        char* name;
-        while ((name = pop(&buff)) != NULL) {
-            printf("/%s", name);
-            free(name);
-        }
-        printf("\n");
+    // 문자열 경로 조합
+    char path_str[MAX_PATH_LENGTH] = "/";
+    while (!IsEmpty(&buff)) {
+        char *name = pop(&buff);
+        strcat(path_str, name);
+        strcat(path_str, "/");
+        free(name);
     }
+
+    // 마지막 슬래시 제거 (루트 제외)
+    if (strlen(path_str) > 1 && path_str[strlen(path_str) - 1] == '/') {
+        path_str[strlen(path_str) - 1] = '\0';
+    }
+
+    // 경로 출력
+    printf("%s\n", path_str);
+
+    // 프롬프트에 반영될 current_path 갱신
+    strncpy(dTree->current_path, path_str, MAX_PATH_LENGTH);
 
     return 0;
 }
