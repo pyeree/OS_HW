@@ -67,14 +67,16 @@ void load_tree_from_file(DirectoryTree* dTree, const char* filename) {
         root->parent = NULL;
         dTree->root = root;
         dTree->current = root;
-        strcpy(dTree->current_path, "team4@ubuntu: /");
+        strcpy(dTree->current_path, "team6@ubuntu: /");
         return;
     }
 
     dTree->root = load_tree_helper(file, 0);
     fclose(file);
 
+    // 🔥 parent 포인터 복구
     set_parents(dTree->root->left, dTree->root);
+
     dTree->current = dTree->root;
-    strcpy(dTree->current_path, "team4@ubuntu: /");
+    strcpy(dTree->current_path, "team6@ubuntu: /");
 }
