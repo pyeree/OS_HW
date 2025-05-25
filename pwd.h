@@ -1,5 +1,7 @@
 #pragma once
 #include "header.h"
+#include <stdbool.h>
+
 
 #define MAX_PATH_LENGTH 1024
 
