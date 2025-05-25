@@ -2,42 +2,41 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_DEPTH 1024
-
-// 간단한 스택 구현
-typedef struct {
-    char *items[MAX_DEPTH];
-    int   top;
-} Stack;
-
-static void init_stack(Stack *s) {
+// 헤더에 맞춰 구현
+int init_stack(Stack* s) {
     s->top = -1;
-}
-static int push(Stack *s, const char *name) {
-    if (s->top + 1 >= MAX_DEPTH) return -1;
-    s->items[++s->top] = strdup(name);
     return 0;
 }
-static char *pop(Stack *s) {
-    if (s->top < 0) return NULL;
-    return s->items[s->top--];
+
+bool IsEmpty(Stack* s) {
+    return s->top == -1;
+}
+
+int push(Stack* s, const char* dir) {
+    s->path[++(s->top)] = strdup(dir);
+    return 0;
+}
+
+char* pop(Stack* s) {
+    if (IsEmpty(s)) return NULL;
+    return s->path[(s->top)--];
 }
 
 void update_current_path(DirectoryTree *dTree) {
     Stack stk;
     init_stack(&stk);
 
-    // 1) current 에서 루트까지 올라가며 이름을 스택에 쌓음
+    // 1) current 에서 root 까지 경로 조각을 스택에 저장
     TreeNode *cur = dTree->current;
     while (cur->parent) {
         push(&stk, cur->name);
         cur = cur->parent;
     }
 
-    // 2) 스택에서 꺼내면서 "/"로 이어 붙이기
+    // 2) 스택에서 꺼내며 "/" 붙여 합치기
     char path[MAX_PATH_LENGTH] = "";
-    if (stk.top < 0) {
-        // 루트 디렉토리
+    if (IsEmpty(&stk)) {
+        // root 디렉토리
         strcpy(path, "/");
     } else {
         char *seg;
@@ -48,7 +47,9 @@ void update_current_path(DirectoryTree *dTree) {
         }
     }
 
-    // 3) current_path 에 복사
-    strncpy(dTree->current_path, path, sizeof(dTree->current_path)-1);
-    dTree->current_path[sizeof(dTree->current_path)-1] = '\0';
+    // 3) dTree->current_path에 저장
+    strncpy(dTree->current_path,
+            path,
+            sizeof(dTree->current_path) - 1);
+    dTree->current_path[sizeof(dTree->current_path) - 1] = '\0';
 }

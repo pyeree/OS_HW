@@ -2,18 +2,19 @@
 #include "header.h"
 #include <stdbool.h>
 
-
 #define MAX_PATH_LENGTH 1024
 
-// 스택 타입은 헤더에 한 번만 선언
 typedef struct {
-    int   top;
     char* path[MAX_PATH_LENGTH];
+    int   top;
 } Stack;
 
-// 스택 함수 원형
-int    init_stack(Stack* s);
-int    is_empty(Stack* s);
-int    push(Stack* s, const char* dir);
-char*  pop(Stack* s);
-int get_pwd(DirectoryTree *dTree);
+// 스택 헬퍼
+int    init_stack       (Stack* s);
+bool   IsEmpty          (Stack* s);
+int    push             (Stack* s, const char* dir);
+char*  pop              (Stack* s);
+
+// dTree->current 를 기준으로 dTree->current_path 에
+// 절대경로 문자열을 만들어 저장
+void   update_current_path(DirectoryTree *dTree);
