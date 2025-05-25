@@ -1,25 +1,29 @@
-//mkdir.c
+// mkdir.c
 #include "mkdir.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
-void run_mkdir(DirectoryTree* tree, const char* dirname) {
+void run_mkdir(DirectoryTree *tree, const char *dirname) {
     if (dirname == NULL || strlen(dirname) == 0) {
         printf("mkdir: missing operand\n");
         printf("Usage: mkdir <directory_name>\n");
         return;
     }
 
-    // 중복 확인
-    TreeNode* node = tree->current->children;
+    // 중복 확인 (left-right 구조 기준)
+    TreeNode *node = tree->current->left;
     while (node != NULL) {
         if (strcmp(node->name, dirname) == 0 && node->type == 'd') {
             printf("mkdir: cannot create directory '%s': File exists\n", dirname);
             return;
         }
-        node = node->next_sibling;
+        node = node->right;
     }
 
     // 새 노드 할당
-    TreeNode* new_dir = malloc(sizeof(TreeNode));
+    TreeNode *new_dir = malloc(sizeof(TreeNode));
     if (!new_dir) {
         perror("malloc failed");
         return;
@@ -30,29 +34,29 @@ void run_mkdir(DirectoryTree* tree, const char* dirname) {
     new_dir->type = 'd';
     new_dir->mode = 755;
     new_dir->size = 4096;
-    new_dir->UID = 0;  // 기본값, 확장 시 사용자 UID 반영 가능
+    new_dir->UID = 0;
     new_dir->GID = 0;
 
     time_t t = time(NULL);
-    struct tm* tm_info = localtime(&t);
+    struct tm *tm_info = localtime(&t);
     new_dir->month = tm_info->tm_mon + 1;
     new_dir->day = tm_info->tm_mday;
     new_dir->hour = tm_info->tm_hour;
     new_dir->minute = tm_info->tm_min;
 
-    // 트리 연결
+    new_dir->left = NULL;
+    new_dir->right = NULL;
     new_dir->parent = tree->current;
-    new_dir->children = NULL;
-    new_dir->next_sibling = NULL;
 
-    if (tree->current->children == NULL) {
-        tree->current->children = new_dir;
+    // 트리에 연결 (left-right 형식)
+    if (tree->current->left == NULL) {
+        tree->current->left = new_dir;
     } else {
-        TreeNode* last = tree->current->children;
-        while (last->next_sibling != NULL) {
-            last = last->next_sibling;
+        TreeNode *last = tree->current->left;
+        while (last->right != NULL) {
+            last = last->right;
         }
-        last->next_sibling = new_dir;
+        last->right = new_dir;
     }
 
     printf("Directory '%s' created successfully.\n", dirname);
