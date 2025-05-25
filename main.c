@@ -66,13 +66,13 @@ int main() {
             }
 
         } else if (strcmp(cmd, "cd") == 0) {
-            char* arg = strtok(NULL, " ");
-            if (arg) {
-                cd(&dTree, arg);
-                save_tree_to_file(&dTree, SAVE_FILE);
-            } else {
-                printf("cd: missing argument\n");
-            }
+            char *arg = strtok(NULL, " ");
+        if (arg) {
+            cd(&dTree, arg);
+            save_tree_to_file(&dTree, SAVE_FILE);
+        } else {
+            printf("cd: missing argument\n");
+        }
 
         } else if (strcmp(cmd, "pwd") == 0) {
             // pwd 는 tree 에 저장된 current 경로를 출력
