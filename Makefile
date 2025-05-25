@@ -41,7 +41,7 @@ mkdir.o: mkdir.c mkdir.h header.h tree_io.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 mv.o: mv.c mv.h header.h cd.h tree_io.h
-$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 pwd.o: pwd.c pwd.h header.h tree_io.h
 	$(CC) $(CFLAGS) -c $< -o $@
