@@ -1,5 +1,8 @@
 #include "header.h"
 #include "tree_io.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 void save_tree_to_file(DirectoryTree* dTree, const char* filename);
 void load_tree_from_file(DirectoryTree* dTree, const char* filename);
@@ -45,12 +48,18 @@ TreeNode* load_tree_helper(FILE* file, int level) {
     return node;
 }
 
+void set_parents(TreeNode *node, TreeNode *parent) {
+    if (!node) return;
+    node->parent = parent;
+    set_parents(node->left, node);
+    set_parents(node->right, parent);
+}
+
 void load_tree_from_file(DirectoryTree* dTree, const char* filename) {
     FILE* file = fopen(filename, "r");
     if (!file) {
-        // 파일이 존재하지 않으면 빈 트리 초기화
-        perror("fopen"); // 수정된 부분: 파일이 없을 때의 오류 메시지 출력
-        TreeNode* root = malloc(sizeof(TreeNode)); //빈 트리 초기화
+        perror("fopen");
+        TreeNode* root = malloc(sizeof(TreeNode));
         strcpy(root->name, "/");
         root->type = 'd';
         root->left = NULL;
@@ -58,11 +67,14 @@ void load_tree_from_file(DirectoryTree* dTree, const char* filename) {
         root->parent = NULL;
         dTree->root = root;
         dTree->current = root;
-        strcpy(dTree->current_path, "Team4:");
+        strcpy(dTree->current_path, "team4@ubuntu: /");
         return;
     }
+
     dTree->root = load_tree_helper(file, 0);
-    dTree->current = dTree->root;
-    strcpy(dTree->current_path, "Team4:");
     fclose(file);
+
+    set_parents(dTree->root->left, dTree->root);
+    dTree->current = dTree->root;
+    strcpy(dTree->current_path, "team4@ubuntu: /");
 }

@@ -24,21 +24,19 @@ void cd(DirectoryTree *dTree, const char *path) {
         }
     }
 
-    // 현재 경로 재조립
+    // 경로 재조립
     char temp[1024] = "";
     TreeNode *cur = dTree->current;
     while (cur != NULL && cur->parent != NULL) {
         char segment[MAX_NAME_LENGTH + 2];
         snprintf(segment, sizeof(segment), "/%s", cur->name);
-        memmove(temp + strlen(segment), temp, strlen(temp) + 1); // 오른쪽으로 밀기
+        memmove(temp + strlen(segment), temp, strlen(temp) + 1);
         memcpy(temp, segment, strlen(segment));
         cur = cur->parent;
     }
 
-    if (strlen(temp) == 0) {
+    if (strlen(temp) == 0)
         strcpy(temp, "/");
-    }
 
-    // 안전하게 current_path 설정 (경고 제거)
     snprintf(dTree->current_path, sizeof(dTree->current_path), "team4@ubuntu: %s", temp);
 }
