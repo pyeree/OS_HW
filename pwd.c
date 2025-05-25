@@ -22,26 +22,31 @@ char* pop(Stack* s) {
     return s->path[(s->top)--];
 }
 
-int get_pwd(DirectoryTree *dTree) {
+void update_current_path(DirectoryTree *dTree) {
     Stack buff;
     init_stack(&buff);
 
-    TreeNode *current = dTree->current;
-    while (current->parent != NULL) {
-        push(&buff, current->name);
-        current = current->parent;
+    // 1) 현재 노드에서 루트까지 올라가며 이름을 스택에 쌓고
+    TreeNode *cur = dTree->current;
+    while (cur->parent) {
+        push(&buff, cur->name);
+        cur = cur->parent;
     }
 
-    // 루트부터 역순으로 쌓아올려 출력
+    // 2) 스택에서 꺼내면서 "/"로 이어 붙이기
+    char path[MAX_PATH_LENGTH] = "";
     if (IsEmpty(&buff)) {
-        printf("/\n");
+        // 루트에 있다면 그냥 "/"
+        strcpy(path, "/");
     } else {
-        char *name;
-        while ((name = pop(&buff)) != NULL) {
-            printf("/%s", name);
+        while (!IsEmpty(&buff)) {
+            char *name = pop(&buff);
+            strcat(path, "/");
+            strcat(path, name);
             free(name);
         }
-        printf("\n");
     }
-    return 0;
+
+    // 3) 최종 결과를 dTree->current_path 에 복사
+    strncpy(dTree->current_path, path, sizeof(dTree->current_path));
 }

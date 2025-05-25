@@ -56,4 +56,6 @@ typedef struct UserList {
 	struct UserList* next;
 } UserList;
 
+void update_current_path(DirectoryTree *dTree);
+
 #endif // HEADER_H

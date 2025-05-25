@@ -42,7 +42,7 @@ void cd(DirectoryTree *dTree, const char *path) {
     else {
         TreeNode *ch = dTree->current->left;
         while (ch) {
-            if (ch->type == 'd' && strcmp(ch->name, path) == 0) {
+            if (ch->type=='d' && strcmp(ch->name, path)==0) {
                 dTree->current = ch;
                 break;
             }
@@ -54,6 +54,6 @@ void cd(DirectoryTree *dTree, const char *path) {
         }
     }
 
-    // **이 한 줄**이 빠져 있어서 current_path 가 갱신되지 않았습니다!
+    // **중요**: 바뀐 current 에 맞춰서 prompt 경로 갱신
     update_current_path(dTree);
 }

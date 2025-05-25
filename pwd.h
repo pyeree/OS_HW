@@ -16,7 +16,3 @@ int    init_stack(Stack* s);
 int    is_empty(Stack* s);
 int    push(Stack* s, const char* dir);
 char*  pop(Stack* s);
-
-// pwd / update_current_path 원형
-int    get_pwd(DirectoryTree *dTree);
-void   update_current_path(DirectoryTree *dTree);
