@@ -2,12 +2,12 @@
 #include "tree_io.h"
 #include "cat.h"
 #include "cd.h"
-// #include "chmod.h"
+#include "chmod.h"
 #include "clear.h"
 #include "diff.h"
 #include "ls.h"
-// #include "mkdir.h"
-// #include "mv.h"
+#include "mkdir.h"
+#include "mv.h"
 #include "pwd.h"
 #include "touch.h"
 #include "whereis.h"
@@ -106,10 +106,10 @@ int main() {
 		        printf("cd: missing argument\n");
 		    }
         }
-        /*
+    
         else if (strcmp(cmd, "chmod") == 0) {
             run_chmod(&dTree, strtok(NULL, ""));
-        } */
+        }
         else if (strcmp(cmd, "clear") == 0) { clear(); }
         else if (strcmp(cmd, "diff") == 0) {
             char *arg1 = strtok(NULL, " ");
@@ -136,8 +136,12 @@ int main() {
                 printf("Try 'man ls' for more information.\n");
             }
         } 
-        // else if (strcmp(cmd, "mkdir") == 0)
-       /*
+        else if (strcmp(cmd, "mkdir") == 0) {
+            char* arg = strtok(NULL, "");
+            run_mkdir(&dTree, arg);
+            save_tree_to_file(&dTree, SAVE_FILE);
+        }
+    
         else if (strcmp(cmd, "mv") == 0) {
             char *src = strtok(NULL, " ");
             char *dest = strtok(NULL, " ");
@@ -148,7 +152,7 @@ int main() {
                 printf("mv: missing operand\n");
                 printf("Try 'man mv' for more information.\n");
             }
-        } */
+        } 
         else if (strcmp(cmd, "pwd") == 0) {
             load_tree_from_file(&dTree, "tree_state.txt");  // 파일에서 트리 로드
             get_pwd(&dTree);  // 트리에서 현재 경로 출력

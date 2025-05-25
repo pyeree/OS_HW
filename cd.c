@@ -26,7 +26,7 @@ void cd(DirectoryTree *dTree, const char *path) {
             return;
         }
     }
-    char full_path[1024] = "";
+    //char full_path[1024] = "";
     TreeNode *cur = dTree->current;
     char temp[1024] = "";
     while (cur != NULL && cur->parent != NULL) {
