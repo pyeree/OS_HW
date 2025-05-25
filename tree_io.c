@@ -1,83 +1,71 @@
-#include "header.h"
 #include "tree_io.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// 트리 저장용 도우미 함수
-void save_tree_helper(FILE* file, TreeNode* node, int level) {
+// 재귀 저장 helper
+static void save_tree_helper(FILE* f, TreeNode* node, int lvl) {
     if (!node) return;
-    fprintf(file, "%*s%c %s\n", level * 2, "", node->type, node->name);
-    save_tree_helper(file, node->left, level + 1);  // 자식
-    save_tree_helper(file, node->right, level);     // 형제
+    fprintf(f, "%*s%c %s\n", lvl*2, "", node->type, node->name);
+    save_tree_helper(f, node->left,  lvl+1);
+    save_tree_helper(f, node->right, lvl);
 }
 
 void save_tree_to_file(DirectoryTree* dTree, const char* filename) {
-    FILE* file = fopen(filename, "w");
-    if (!file) {
-        perror("fopen");
-        return;
-    }
-    save_tree_helper(file, dTree->root, 0);
-    fclose(file);
+    FILE* f = fopen(filename, "w");
+    if (!f) { perror("fopen"); return; }
+    save_tree_helper(f, dTree->root, 0);
+    fclose(f);
 }
 
-// 트리 복원용 도우미 함수
-TreeNode* load_tree_helper(FILE* file, int level) {
+// 재귀 로드 helper
+static TreeNode* load_tree_helper(FILE* f, int lvl) {
     char line[1024];
-    TreeNode* node = NULL;
+    if (!fgets(line, sizeof(line), f)) return NULL;
 
-    if (fgets(line, sizeof(line), file) == NULL)
-        return NULL;
-
-    int current_level = 0;
-    while (line[current_level] == ' ' && current_level < level * 2)
-        current_level++;
-    if (current_level != level * 2) {
-        fseek(file, -strlen(line), SEEK_CUR);  // 줄 되돌리기
+    int indent = 0;
+    while (line[indent]==' ' && indent < lvl*2) indent++;
+    if (indent != lvl*2) {
+        fseek(f, -strlen(line), SEEK_CUR);
         return NULL;
     }
 
-    node = malloc(sizeof(TreeNode));
-    sscanf(line + current_level, "%c %s\n", &node->type, node->name);
-    node->left = load_tree_helper(file, level + 1);   // 자식
-    node->right = load_tree_helper(file, level);      // 형제
-
+    TreeNode* node = malloc(sizeof(TreeNode));
+    sscanf(line+indent, "%c %s\n", &node->type, node->name);
+    node->left   = load_tree_helper(f, lvl+1);
+    node->right  = load_tree_helper(f, lvl);
+    node->parent = NULL;
     return node;
 }
 
-// 🔧 핵심: 트리 구조 내 모든 노드에 parent 연결 복구
-void set_parents(TreeNode *node, TreeNode *parent) {
+// parent 포인터 복원 helper
+static void set_parents(TreeNode* node, TreeNode* parent) {
     if (!node) return;
     node->parent = parent;
-    set_parents(node->left, node);    // 자식 → 부모 자신
-    set_parents(node->right, parent); // 형제 → 같은 부모
+    set_parents(node->left,  node);
+    set_parents(node->right, parent);
 }
 
 void load_tree_from_file(DirectoryTree* dTree, const char* filename) {
-    FILE* file = fopen(filename, "r");
-    if (!file) {
-        // 파일 없으면 루트 디렉토리 초기화
+    FILE* f = fopen(filename, "r");
+    if (!f) {
+        // 파일 없으면 루트만 초기화
         perror("fopen");
         TreeNode* root = malloc(sizeof(TreeNode));
         strcpy(root->name, "/");
         root->type = 'd';
-        root->left = NULL;
-        root->right = NULL;
-        root->parent = NULL;
-
+        root->left = root->right = root->parent = NULL;
         dTree->root = root;
         dTree->current = root;
-        strcpy(dTree->current_path, "team4@ubuntu: /");
+        strcpy(dTree->current_path, "/");
         return;
     }
 
-    dTree->root = load_tree_helper(file, 0);
-    fclose(file);
-
-    // 🔥 반드시 parent 복구!
+    dTree->root = load_tree_helper(f, 0);
+    fclose(f);
+    // 부모 복원 (root 자체는 parent=NULL)
     set_parents(dTree->root->left, dTree->root);
 
     dTree->current = dTree->root;
-    strcpy(dTree->current_path, "team4@ubuntu: /");
+    strcpy(dTree->current_path, "/");
 }

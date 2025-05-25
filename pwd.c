@@ -4,48 +4,40 @@
 #include <string.h>
 #include <stdbool.h>
 
-int init_stack(Stack* s) {
-    s->top = -1;
-    return 0;
-}
+typedef struct {
+    int top;
+    char* items[MAX_PATH_LENGTH];
+} Stack;
 
-bool IsEmpty(Stack* s) {
-    return s->top == -1;
-}
+static void init_stack(Stack *s)      { s->top = -1; }
+static bool is_empty(Stack *s)         { return s->top < 0; }
+static void push(Stack *s, char *str)  { s->items[++s->top] = strdup(str); }
+static char* pop_(Stack *s)            { return is_empty(s) ? NULL : s->items[s->top--]; }
 
-int push(Stack* s, const char* dir) {
-    s->path[++(s->top)] = strdup(dir);
-    return 0;
-}
+void update_current_path(DirectoryTree *dTree) {
+    Stack st; init_stack(&st);
+    TreeNode *cur = dTree->current;
+    while (cur->parent) {
+        push(&st, cur->name);
+        cur = cur->parent;
+    }
 
-char* pop(Stack* s) {
-    if (IsEmpty(s)) return NULL;
-    return s->path[(s->top)--];
+    char buf[MAX_PATH_LENGTH] = "";
+    if (is_empty(&st)) {
+        strcpy(buf, "/");
+    } else {
+        while (!is_empty(&st)) {
+            char *seg = pop_(&st);
+            strcat(buf, "/");
+            strcat(buf, seg);
+            free(seg);
+        }
+    }
+    strncpy(dTree->current_path, buf, MAX_PATH_LENGTH);
 }
 
 int get_pwd(DirectoryTree *dTree) {
-    Stack buff;
-    init_stack(&buff);
-
-    TreeNode *current = dTree->current;
-    while (current->parent != NULL) {
-        push(&buff, current->name);
-        current = current->parent;
-    }
-
-    char path_str[MAX_PATH_LENGTH] = "/";
-    while (!IsEmpty(&buff)) {
-        char *name = pop(&buff);
-        strcat(path_str, name);
-        strcat(path_str, "/");
-        free(name);
-    }
-
-    if (strlen(path_str) > 1 && path_str[strlen(path_str) - 1] == '/')
-        path_str[strlen(path_str) - 1] = '\0';
-
-    printf("%s\n", path_str);
-    strncpy(dTree->current_path, path_str, MAX_PATH_LENGTH);
-
+    update_current_path(dTree);
+    printf("%s\n", dTree->current_path);
     return 0;
 }

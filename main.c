@@ -70,19 +70,14 @@ int main() {
 
     printf("Initial current path: %s\n", dTree.current_path);
     char command[256];
+    char line[256];
     while (1) {
-        printf("%s ", dTree.current_path);
-        fgets(command, sizeof(command), stdin);
-        command[strcspn(command, "\n")] = '\0'; // 개행 문자 제거
+         // 항상 "team4@ubuntu:<절대경로> " 형태 프롬프트
+        printf("team4@ubuntu:%s> ", dTree.current_path);
 
-        int argc = 0; // 인자 개수
-        int length = strlen(command); // 명령어 길이
-        for (int i = 0; i < length; i++) {
-            if (command[i] == ' ') { // 공백을 기준으로 인자 개수 세기
-                argc++;
-            }
-        }
-
+        if (!fgets(line, sizeof(line), stdin)) break;
+        line[strcspn(line, "\n")] = '\0';
+        if (line[0] == '\0') continue;
         char* cmd = strtok(command, " ");
         if (cmd == NULL) continue;
 
