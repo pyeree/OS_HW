@@ -76,8 +76,8 @@ int main() {
 
         } else if (strcmp(cmd, "pwd") == 0) {
             // pwd 는 tree 에 저장된 current 경로를 출력
-            get_pwd(&dTree);
-            // get_pwd 내부에서 dTree.current_path 도 갱신됨
+            update_current_path(&dTree);
+            printf("%s\n", dTree.current_path);
 
         } else if (strcmp(cmd, "ls") == 0) {
             char* arg = strtok(NULL, " ");
