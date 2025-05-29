@@ -3,61 +3,63 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
+#include <pthread.h>
+#include <errno.h>
 
-void run_mkdir(DirectoryTree *tree, const char *dirname) {
-    if (dirname == NULL || strlen(dirname) == 0) {
+typedef struct {
+    DirectoryTree* tree;
+    char dirname[MAX_NAME_LENGTH];
+    int mode;
+} MkdirThreadArg;
+
+/**
+ * 스레드 워커: my_mkdir을 호출하여 트리에 노드를 추가하고 실제 디렉토리도 생성
+ */
+void* mkdir_thread_worker(void* arg) {
+    MkdirThreadArg* data = (MkdirThreadArg*)arg;
+    my_mkdir(data->tree, data->dirname, data->mode);  // mkdir.h의 my_mkdir 사용:contentReference[oaicite:0]{index=0}
+    free(data);
+    return NULL;
+}
+
+/**
+ * 공백으로 구분된 여러 디렉터리를 멀티스레드로 생성
+ * mode: 퍼미션 비트 (예: 0755)
+ */
+void run_mkdir_multithread(DirectoryTree* tree, const char* arg, int mode) {
+    if (!arg || *arg == '\0') {
         printf("mkdir: missing operand\n");
-        printf("Usage: mkdir <directory_name>\n");
         return;
     }
 
-    // 중복 확인 (left-right 구조 기준)
-    TreeNode *node = tree->current->left;
-    while (node != NULL) {
-        if (strcmp(node->name, dirname) == 0 && node->type == 'd') {
-            printf("mkdir: cannot create directory '%s': File exists\n", dirname);
-            return;
+    char temp[1024];
+    strncpy(temp, arg, sizeof(temp));
+    temp[sizeof(temp)-1] = '\0';
+
+    pthread_t tids[50];
+    int count = 0;
+    char* token = strtok(temp, " ");
+    while (token && count < 50) {
+        MkdirThreadArg* tArg = malloc(sizeof(MkdirThreadArg));
+        if (!tArg) {
+            perror("malloc");
+            break;
         }
-        node = node->right;
-    }
+        tArg->tree = tree;
+        tArg->mode = mode;
+        strncpy(tArg->dirname, token, MAX_NAME_LENGTH);
+        tArg->dirname[MAX_NAME_LENGTH-1] = '\0';
 
-    // 새 노드 할당
-    TreeNode *new_dir = malloc(sizeof(TreeNode));
-    if (!new_dir) {
-        perror("malloc failed");
-        return;
-    }
-
-    // 속성 설정
-    strncpy(new_dir->name, dirname, MAX_NAME_LENGTH);
-    new_dir->type = 'd';
-    new_dir->mode = 755;
-    new_dir->size = 4096;
-    new_dir->UID = 0;
-    new_dir->GID = 0;
-
-    time_t t = time(NULL);
-    struct tm *tm_info = localtime(&t);
-    new_dir->month = tm_info->tm_mon + 1;
-    new_dir->day = tm_info->tm_mday;
-    new_dir->hour = tm_info->tm_hour;
-    new_dir->minute = tm_info->tm_min;
-
-    new_dir->left = NULL;
-    new_dir->right = NULL;
-    new_dir->parent = tree->current;
-
-    // 트리에 연결 (left-right 형식)
-    if (tree->current->left == NULL) {
-        tree->current->left = new_dir;
-    } else {
-        TreeNode *last = tree->current->left;
-        while (last->right != NULL) {
-            last = last->right;
+        if (pthread_create(&tids[count], NULL, mkdir_thread_worker, tArg) != 0) {
+            perror("pthread_create");
+            free(tArg);
+        } else {
+            count++;
         }
-        last->right = new_dir;
+        token = strtok(NULL, " ");
     }
 
-    printf("Directory '%s' created successfully.\n", dirname);
+    for (int i = 0; i < count; i++) {
+        pthread_join(tids[i], NULL);
+    }
 }

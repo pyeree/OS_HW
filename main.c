@@ -94,10 +94,23 @@ int main() {
             }
 
         } else if (strcmp(cmd, "mkdir") == 0) {
-            char* arg = strtok(NULL, " ");
-            run_mkdir(&dTree, arg);
-            save_tree_to_file(&dTree, SAVE_FILE);
-
+            char* args = strtok(NULL, "");
+            if (args) {
+                // mode 0755 로 디렉터리 생성 :contentReference[oaicite:4]{index=4}
+                run_mkdir_multithread(&dTree, args, 0755);
+                save_tree_to_file(&dTree, SAVE_FILE);
+            } else {
+                printf("mkdir: missing operand\n");
+            }
+        }else if (strcmp(cmd, "rmdir") == 0) {
+            // 단일 경로나 경로 문자열(“a/b/c”) 지원
+            char* path = strtok(NULL, " ");
+            if (path) {
+                remove_dir_path(&dTree, path);
+                save_tree_to_file(&dTree, SAVE_FILE);
+            } else {
+                printf("rmdir: missing operand\n");
+            }
         } else if (strcmp(cmd, "mv") == 0) {
             char* src  = strtok(NULL, " ");
             char* dest = strtok(NULL, " ");

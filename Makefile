@@ -1,10 +1,10 @@
 CC = gcc
 CFLAGS = -Wall -g
 TARGET = program
-SRCS = main.c cat.c cd.c clear.c diff.c ls.c pwd.c touch.c tree_io.c whereis.c mkdir.c mv.c chmod.c
+SRCS = main.c cat.c cd.c clear.c diff.c ls.c pwd.c touch.c tree_io.c whereis.c mkdir.c mv.c chmod.c rmdir.c
 # SRCS = main.c cat.c cd.c chmod.c clear.c diff.c ls.c mkdir.c mv.c pwd.c touch.c tree_io.c whereis.c # 모든 소스 파일
 OBJS = $(SRCS:.c=.o)
-DEPS = header.h tree_io.h cat.h cd.h clear.h diff.h ls.h pwd.h touch.h whereis.h mkdir.h mv.h chmod.h
+DEPS = header.h tree_io.h cat.h cd.h clear.h diff.h ls.h pwd.h touch.h whereis.h mkdir.h mv.h chmod.h rmdir.h
 # DEPS = header.h tree_io.h cat.h cd.h chmod.h clear.h diff.h ls.h mkdir.h mv.h pwd.h touch.h whereis.h # 모든 헤더 파일
 
 #### Notice ####
@@ -13,9 +13,9 @@ DEPS = header.h tree_io.h cat.h cd.h clear.h diff.h ls.h pwd.h touch.h whereis.h
 # 이후 make 명령어를 통해 컴파일하면 program 이라는 파일이 생성되며, ./program을 통해 실행할 수 있습니다.
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ -lpthread
 
-main.o: main.c header.h tree_io.h cat.h cd.h clear.h diff.h ls.h pwd.h touch.h whereis.h mkdir.h mv.h chmod.h
+main.o: main.c header.h tree_io.h cat.h cd.h clear.h diff.h ls.h pwd.h touch.h whereis.h mkdir.h mv.h chmod.h rmdir.h
 # main.o: main.c header.h tree_io.h cat.h cd.h chmod.h clear.h diff.h ls.h mkdir.h mv.h pwd.h touch.h whereis.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -53,6 +53,9 @@ tree_io.o: tree_io.c tree_io.h header.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 whereis.o: whereis.c whereis.h header.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
+rmdir.o: rmdir.c rmdir.h header.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
