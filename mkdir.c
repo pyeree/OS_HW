@@ -52,11 +52,6 @@ int my_mkdir(DirectoryTree* dTree, const char* dName, int mode) {
     if (add_tree_node(dTree, dName) != 0) {
         return -1;
     }
-    // 2) 실제 파일시스템에도 생성
-    if (mkdir(dName, mode) != 0 && errno != EEXIST) {
-        perror("mkdir");
-        return -1;
-    }
     return 0;
 }
 

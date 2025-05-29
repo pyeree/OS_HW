@@ -95,22 +95,39 @@ int main() {
             }
 
         } else if (strcmp(cmd, "mkdir") == 0) {
+            // mkdir dir1 dir2 ...
             char* args = strtok(NULL, "");
-            if (args) {
-                // mode 0755 로 디렉터리 생성 :contentReference[oaicite:4]{index=4}
+            if (args && *args) {
                 run_mkdir_multithread(&dTree, args, 0755);
                 save_tree_to_file(&dTree, SAVE_FILE);
             } else {
                 printf("mkdir: missing operand\n");
             }
         }else if (strcmp(cmd, "rmdir") == 0) {
-            // 단일 경로나 경로 문자열(“a/b/c”) 지원
-            char* path = strtok(NULL, " ");
-            if (path) {
-                remove_dir_path(&dTree, path);
-                save_tree_to_file(&dTree, SAVE_FILE);
-            } else {
-                printf("rmdir: missing operand\n");
+            char* opt = strtok(NULL, " ");
+            if (opt && strcmp(opt, "-p") == 0) {
+                char* path = strtok(NULL, " ");
+                if (path) {
+                    remove_dir_p_path(&dTree, path);
+                    save_tree_to_file(&dTree, SAVE_FILE);
+                } else {
+                    printf("rmdir -p: missing operand\n");
+                }
+            }
+            else {
+                // rmdir dir1 dir2 ...
+                // opt이 NULL이면 missing, 아니면 opt부터 토큰 루프
+                if (!opt) {
+                    printf("rmdir: missing operand\n");
+                } else {
+                    char* tok = opt;
+                    // opt 뒤에 더 있을 수 있으니 strtok(NULL)로 이어서
+                    while (tok) {
+                        remove_dir_path(&dTree, tok);
+                        tok = strtok(NULL, " ");
+                    }
+                    save_tree_to_file(&dTree, SAVE_FILE);
+                }
             }
         } else if (strcmp(cmd, "mv") == 0) {
             char* src  = strtok(NULL, " ");
@@ -121,7 +138,6 @@ int main() {
             } else {
                 printf("mv: missing operand\n");
             }
-
         } else if (strcmp(cmd, "chmod") == 0) {
             run_chmod(&dTree, strtok(NULL, ""));
             save_tree_to_file(&dTree, SAVE_FILE);
