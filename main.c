@@ -139,8 +139,13 @@ int main() {
                 printf("mv: missing operand\n");
             }
         } else if (strcmp(cmd, "chmod") == 0) {
-            run_chmod(&dTree, strtok(NULL, ""));
-            save_tree_to_file(&dTree, SAVE_FILE);
+            char* args = strtok(NULL, "");
+            if (args && *args) {
+                run_chmod(&dTree, args);
+                save_tree_to_file(&dTree, SAVE_FILE);
+            } else {
+                printf("chmod: missing operand\n");
+            }
 
         } else if (strcmp(cmd, "clear") == 0) {
             clear();
