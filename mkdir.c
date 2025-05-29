@@ -37,11 +37,6 @@ int Makefile(DirectoryTree* dTree, char* dName, char type, int k) {
     return 0;
 }
 
-// ── 내부 헬퍼: 디렉터리용으로 포맷
-static int add_tree_node(DirectoryTree* dTree, const char* dName) {
-    return Makefile(dTree, (char*)dName, 'd', 4096);
-}
-
 // ── 파일/디렉터리 트리에 새 노드를 추가하는 내부 헬퍼
 //    (header.h 에 선언된 Makefile 함수 사용)
 static int add_tree_node(DirectoryTree* dTree, const char* dName) {

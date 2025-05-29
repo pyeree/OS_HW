@@ -4,7 +4,6 @@
 
 #include "header.h"    // DirectoryTree, TreeNode 정의 :contentReference[oaicite:0]{index=0}
 int Makefile(DirectoryTree* dTree, char* dName, char type, int k);
-static int add_tree_node(DirectoryTree* dTree, const char* dName);
 /**
  * @brief 단일 디렉터리를 생성하여 트리와 실제 파일시스템에 추가
  * @param dTree 디렉터리 트리 구조체
