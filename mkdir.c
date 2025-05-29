@@ -1,10 +1,35 @@
 // mkdir.c
 #include "mkdir.h"
+#include "header.h"
+#include <sys/stat.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
-#include <errno.h>
+
+// ── 파일/디렉터리 트리에 새 노드를 추가하는 내부 헬퍼
+//    (header.h 에 선언된 Makefile 함수 사용)
+static int add_tree_node(DirectoryTree* dTree, const char* dName) {
+    // 'd' 타입, 4096 기본 크기
+    return Makefile(dTree, (char*)dName, 'd', 4096);
+}
+
+/**
+ * @brief 실제 디렉터리 생성 + 트리에 반영
+ */
+int my_mkdir(DirectoryTree* dTree, const char* dName, int mode) {
+    // 1) 트리에 노드 추가
+    if (add_tree_node(dTree, dName) != 0) {
+        return -1;
+    }
+    // 2) 실제 파일시스템에도 생성
+    if (mkdir(dName, mode) != 0 && errno != EEXIST) {
+        perror("mkdir");
+        return -1;
+    }
+    return 0;
+}
 
 typedef struct {
     DirectoryTree* tree;
@@ -13,52 +38,47 @@ typedef struct {
 } MkdirThreadArg;
 
 /**
- * 스레드 워커: my_mkdir을 호출하여 트리에 노드를 추가하고 실제 디렉토리도 생성
+ * @brief 스레드 워커: my_mkdir 호출
  */
 void* mkdir_thread_worker(void* arg) {
     MkdirThreadArg* data = (MkdirThreadArg*)arg;
-    my_mkdir(data->tree, data->dirname, data->mode);  // mkdir.h의 my_mkdir 사용:contentReference[oaicite:0]{index=0}
+    my_mkdir(data->tree, data->dirname, data->mode);
     free(data);
     return NULL;
 }
 
 /**
- * 공백으로 구분된 여러 디렉터리를 멀티스레드로 생성
- * mode: 퍼미션 비트 (예: 0755)
+ * @brief 공백 구분된 여러 디렉터리를 멀티스레드로 생성
  */
 void run_mkdir_multithread(DirectoryTree* tree, const char* arg, int mode) {
-    if (!arg || *arg == '\0') {
+    if (!arg || *arg=='\0') {
         printf("mkdir: missing operand\n");
         return;
     }
 
-    char temp[1024];
-    strncpy(temp, arg, sizeof(temp));
-    temp[sizeof(temp)-1] = '\0';
+    char buf[1024];
+    strncpy(buf, arg, sizeof(buf));
+    buf[sizeof(buf)-1] = '\0';
 
     pthread_t tids[50];
     int count = 0;
-    char* token = strtok(temp, " ");
-    while (token && count < 50) {
-        MkdirThreadArg* tArg = malloc(sizeof(MkdirThreadArg));
-        if (!tArg) {
-            perror("malloc");
-            break;
-        }
-        tArg->tree = tree;
-        tArg->mode = mode;
-        strncpy(tArg->dirname, token, MAX_NAME_LENGTH);
-        tArg->dirname[MAX_NAME_LENGTH-1] = '\0';
+    char* tok = strtok(buf, " ");
 
-        if (pthread_create(&tids[count], NULL, mkdir_thread_worker, tArg) != 0) {
-            perror("pthread_create");
-            free(tArg);
-        } else {
+    while (tok && count < 50) {
+        MkdirThreadArg* a = malloc(sizeof(*a));
+        a->tree = tree;
+        a->mode = mode;
+        strncpy(a->dirname, tok, MAX_NAME_LENGTH);
+        a->dirname[MAX_NAME_LENGTH-1] = '\0';
+
+        if (pthread_create(&tids[count], NULL, mkdir_thread_worker, a)==0) {
             count++;
+        } else {
+            perror("pthread_create");
+            free(a);
         }
-        token = strtok(NULL, " ");
+        tok = strtok(NULL, " ");
     }
-
     for (int i = 0; i < count; i++) {
         pthread_join(tids[i], NULL);
     }

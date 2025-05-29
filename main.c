@@ -12,6 +12,7 @@
 #include "pwd.h"
 #include "touch.h"
 #include "whereis.h"
+#include "rmdir.h"
 
 #define SAVE_FILE "tree_state.txt"
 
