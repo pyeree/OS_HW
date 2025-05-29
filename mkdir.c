@@ -1,4 +1,3 @@
-// mkdir.c
 #include "mkdir.h"
 #include "header.h"
 #include <sys/stat.h>
@@ -7,6 +6,41 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+
+int Makefile(DirectoryTree* dTree, char* dName, char type, int k) {
+    TreeNode* New = malloc(sizeof(TreeNode));
+    if (!New) { perror("malloc"); return -1; }
+    time_t t; struct tm *now;
+    time(&t); now = localtime(&t);
+
+    New->left  = NULL;
+    New->right = NULL;
+    strncpy(New->name, dName, MAX_NAME_LENGTH);
+    New->type  = type;
+    New->mode  = (type=='d'?0755:0644);
+    New->size  = k;
+    New->UID   = getuid();
+    New->GID   = getgid();
+    New->month = now->tm_mon + 1;
+    New->day   = now->tm_mday;
+    New->hour  = now->tm_hour;
+    New->minute= now->tm_min;
+    New->parent= dTree->current;
+
+    if (!dTree->current->left) {
+        dTree->current->left = New;
+    } else {
+        TreeNode* tmp = dTree->current->left;
+        while (tmp->right) tmp = tmp->right;
+        tmp->right = New;
+    }
+    return 0;
+}
+
+// ── 내부 헬퍼: 디렉터리용으로 포맷
+static int add_tree_node(DirectoryTree* dTree, const char* dName) {
+    return Makefile(dTree, (char*)dName, 'd', 4096);
+}
 
 // ── 파일/디렉터리 트리에 새 노드를 추가하는 내부 헬퍼
 //    (header.h 에 선언된 Makefile 함수 사용)
