@@ -7,26 +7,28 @@
 #include <string.h>
 #include <unistd.h>
 
-#define CHUNK 1024
+#define READ_CHUNK 1024
 
 // ───────────────────────────────────────────────────────
-// 1) 절대/상대 경로에서 파일 노드 검색
-static TreeNode* search_path(DirectoryTree *dTree, const char *path) {
+// 경로에 해당하는 ‘파일’ 노드만 찾아서 돌려줍니다.
+static TreeNode* search_file(DirectoryTree *dTree, const char *path) {
     TreeNode *cur = (path[0]=='/') ? dTree->root : dTree->current;
     char buf[MAX_PATH_LENGTH];
-    strncpy(buf, path + (path[0]=='/'?1:0), sizeof(buf));
+    strncpy(buf, path + (path[0]=='/' ? 1 : 0), sizeof(buf));
     buf[sizeof(buf)-1] = '\0';
+
     for (char *tok = strtok(buf, "/"); tok; tok = strtok(NULL, "/")) {
-        TreeNode *c = cur->left;
-        while (c && strcmp(c->name, tok) != 0) c = c->right;
-        if (!c) return NULL;
-        cur = c;
+        TreeNode *child = cur->left;
+        while (child && strcmp(child->name, tok) != 0)
+            child = child->right;
+        if (!child) return NULL;
+        cur = child;
     }
-    return (cur->type=='f') ? cur : NULL;
+    return (cur->type == 'f') ? cur : NULL;
 }
 
 // ───────────────────────────────────────────────────────
-// 2) 트리에서 node 분리(detach)
+// 노드를 트리에서 떼어냅니다 (detach)
 static void detach_node(TreeNode *node) {
     TreeNode *p = node->parent;
     if (!p) return;
@@ -42,47 +44,47 @@ static void detach_node(TreeNode *node) {
 }
 
 // ───────────────────────────────────────────────────────
-// 3) 트리에 새 파일 노드 추가 (마지막 자식으로)
-static void add_file_node(DirectoryTree *dTree,
-                          const char *name,
-                          char *content,
-                          int size) {
+// 가상FS에 새 파일 노드를 생성·붙입니다 (attach)
+static void attach_file_node(DirectoryTree *dTree,
+                             const char *name,
+                             char *content,
+                             int size) {
     TreeNode *n = malloc(sizeof(TreeNode));
     if (!n) { perror("malloc"); return; }
+
     strncpy(n->name, name, MAX_NAME_LENGTH);
     n->name[MAX_NAME_LENGTH-1] = '\0';
     n->type    = 'f';
     n->mode    = 0644;
     n->size    = size;
     n->content = content;
-    n->left = NULL;
-    n->right = NULL;
-    n->parent = NULL;
-    // attach
-    TreeNode *cur = dTree->current;
-    if (!cur->left) {
-        cur->left = n;
-        n->parent = cur;
+    n->left    = n->right = NULL;
+    n->parent  = NULL;
+
+    TreeNode *cwd = dTree->current;
+    if (!cwd->left) {
+        cwd->left = n;
+        n->parent = cwd;
     } else {
-        TreeNode *it = cur->left;
+        TreeNode *it = cwd->left;
         while (it->right) it = it->right;
         it->right = n;
-        n->parent = cur;
+        n->parent = cwd;
     }
 }
 
 // ───────────────────────────────────────────────────────
-// 4) 기존 파일 노드 free
+// 기존 파일 노드를 메모리 해제
 static void free_file_node(TreeNode *node) {
     if (node->content) free(node->content);
     free(node);
 }
 
 // ───────────────────────────────────────────────────────
-// 5) cat 명령 전체 구현
+// cat 구현: “> filename” 은 stdin → 메모리, 그 외는 가상FS 상의 content 출력
 int cat(DirectoryTree *dTree, char *cmd) {
     char *filename;
-    int   mode;  // 0 = create/overwrite, 1 = print, 2 = print with line#, 
+    int   mode;   // 0=overwrite, 1=print, 2=print with line#
     if (strcmp(cmd, ">") == 0) {
         mode = 0;
         filename = strtok(NULL, " ");
@@ -99,13 +101,13 @@ int cat(DirectoryTree *dTree, char *cmd) {
     }
 
     if (mode == 0) {
-        // ─ overwrite: stdin → 메모리
-        int cap = CHUNK;
+        // ─ stdin 전부 읽어서 메모리에 저장
+        int cap = READ_CHUNK;
         char *buf = malloc(cap);
         if (!buf) { perror("malloc"); return 1; }
         int total = 0, r;
-        char tmp[CHUNK];
-        while ((r = read(STDIN_FILENO, tmp, CHUNK)) > 0) {
+        char tmp[READ_CHUNK];
+        while ((r = read(STDIN_FILENO, tmp, READ_CHUNK)) > 0) {
             if (total + r > cap) {
                 cap = cap * 2 + r;
                 buf = realloc(buf, cap);
@@ -115,30 +117,30 @@ int cat(DirectoryTree *dTree, char *cmd) {
             total += r;
         }
         if (r < 0) { perror("read"); free(buf); return 1; }
-        // 기존 파일 노드 제거
-        TreeNode *old = search_path(dTree, filename);
+
+        // 기존 노드 제거
+        TreeNode *old = search_file(dTree, filename);
         if (old) {
             detach_node(old);
             free_file_node(old);
         }
         // 새 노드 추가
-        add_file_node(dTree, filename, buf, total);
+        attach_file_node(dTree, filename, buf, total);
         return 0;
     }
 
-    // ─ display
-    TreeNode *node = search_path(dTree, filename);
+    // ─ print modes
+    TreeNode *node = search_file(dTree, filename);
     if (!node) {
         printf("cat: %s: No such file\n", filename);
         return 1;
     }
-    if (!node->content || node->size == 0) return 0;
+    if (node->size <= 0) return 0;
 
     int lineno = 1;
     char *p = node->content;
-    char *end = p + node->size;
+    char *end = node->content + node->size;
     while (p < end) {
-        // 한 줄 분리
         char *nl = memchr(p, '\n', end - p);
         int len = nl ? (nl - p + 1) : (end - p);
         if (mode == 2) {
