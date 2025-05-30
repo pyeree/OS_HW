@@ -160,12 +160,15 @@ int main() {
             }
 
         } else if (strcmp(cmd, "touch") == 0) {
-            char* arg = strtok(NULL, " ");
-            if (arg) {
-                touch(&dTree, arg);
-                save_tree_to_file(&dTree, SAVE_FILE);
-            } else {
+            char *arg = strtok(NULL, " ");
+            if (!arg) {
                 printf("touch: missing argument\n");
+            } else {
+                while (arg) {
+                    touch(&dTree, arg);
+                    arg = strtok(NULL, " ");
+                }
+                save_tree_to_file(&dTree, SAVE_FILE);
             }
 
         } else if (strcmp(cmd, "whereis") == 0) {

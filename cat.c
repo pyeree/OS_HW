@@ -1,3 +1,5 @@
+// cat.c
+
 #include "cat.h"
 #include <fcntl.h>
 #include <stdio.h>
@@ -29,9 +31,6 @@ int cat(DirectoryTree *dTree, char *cmd) {
 }
 
 int Concatenate(DirectoryTree *dTree, char *fName, int o) {
-    //파일을 읽어 출력하거나(o=1/2) 표준입력으로부터 받아 새 파일을 생성하고 저장
-    //(o=0)
-
     FILE *fp;
     char BUF[MAXB];
     int count = 1;
@@ -42,24 +41,20 @@ int Concatenate(DirectoryTree *dTree, char *fName, int o) {
             printf("cat: %s: No such file\n", fName);
             return 1;
         }
-
-        while (feof(fp) == 0) {
-            if (fgets(BUF, sizeof(BUF), fp) == NULL)
-                break;
+        while (fgets(BUF, sizeof(BUF), fp)) {
             if (o == 2) {
-                printf("%d  ", count);
-                count++;
+                printf("%d  ", count++);
             }
             fputs(BUF, stdout);
         }
         fclose(fp);
     } else {
-        int fd = open(fName, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+        int fd = open(fName, O_WRONLY | O_CREAT | O_TRUNC,
+                      S_IRUSR | S_IWUSR);
         if (fd == -1) {
             perror("open");
             return 1;
         }
-
         char buf[1000];
         int n;
         while ((n = read(STDIN_FILENO, buf, sizeof(buf))) > 0) {
@@ -69,34 +64,26 @@ int Concatenate(DirectoryTree *dTree, char *fName, int o) {
                 return 1;
             }
         }
-
         if (n == -1) {
             perror("read");
             close(fd);
             return 1;
         }
-
-        // 파일 크기 계산
         int k = lseek(fd, 0, SEEK_END);
         if (k == -1) {
             perror("lseek");
             close(fd);
             return 1;
         }
-
         close(fd);
-
-        Mkfile(dTree, fName, 'f', k); // 파일 생성 전용 함수
+        Mkfile(dTree, fName, 'f', k);
     }
     return 0;
 }
 
 int Mkfile(DirectoryTree *dTree, char *dName, char type, int k) {
-    //트리 구조에 새로운 파일 노드를 생성하고 현재 디렉토리에 연결
-
-    TreeNode *New = (TreeNode *)malloc(sizeof(TreeNode));
+    TreeNode *New = malloc(sizeof(TreeNode));
     TreeNode *tmpN = NULL;
-
     time_t ltime;
     struct tm *Now;
 
@@ -105,29 +92,25 @@ int Mkfile(DirectoryTree *dTree, char *dName, char type, int k) {
 
     New->left = NULL;
     New->right = NULL;
-
     strncpy(New->name, dName, MAX_NAME_LENGTH);
     New->type = 'f';
     New->mode = 0644;
     New->size = k;
-    New->UID = 1234;
-    New->GID = 1234;
-    New->month = Now->tm_mon + 1;
-    New->day = Now->tm_mday;
-    New->hour = Now->tm_hour + 9;
-    New->minute = Now->tm_min;
-    New->parent = dTree->current;
+    New->UID  = 1234;
+    New->GID  = 1234;
+    New->month   = Now->tm_mon + 1;
+    New->day     = Now->tm_mday;
+    New->hour    = Now->tm_hour + 9;
+    New->minute  = Now->tm_min;
+    New->parent  = dTree->current;
 
     if (dTree->current->left == NULL) {
         dTree->current->left = New;
     } else {
         tmpN = dTree->current->left;
-
-        while (tmpN->right != NULL) {
+        while (tmpN->right != NULL)
             tmpN = tmpN->right;
-        }
         tmpN->right = New;
     }
-
     return 0;
 }
