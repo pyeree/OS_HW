@@ -1,4 +1,5 @@
 // diff.c
+
 #include "diff.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,10 +32,22 @@ static int diff_cmp(const void* a, const void* b) {
 static void record_diff(int order, const char* fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    vsnprintf(diffs[diff_count].text, sizeof(diffs[diff_count].text), fmt, ap);
+    vsnprintf(diffs[diff_count].text,
+              sizeof(diffs[diff_count].text),
+              fmt, ap);
     va_end(ap);
     diffs[diff_count].order = order;
     diff_count++;
+}
+
+// --- 유틸: fgets 후 개행(\n) 없으면 붙이기
+static void safe_getline(char *buf, FILE *fp) {
+    if (!fgets(buf, MAX_LEN, fp)) return;
+    size_t L = strlen(buf);
+    if (L > 0 && buf[L-1] != '\n' && L+1 < MAX_LEN) {
+        buf[L]   = '\n';
+        buf[L+1] = '\0';
+    }
 }
 
 void diff(const char* file1, const char* file2) {
@@ -53,8 +66,14 @@ void diff(const char* file1, const char* file2) {
 
     // 2) 각 파일을 lines1/lines2에 로드
     int n = 0, m = 0;
-    while (n < MAX_LINES && fgets(lines1[n], MAX_LEN, fp1)) n++;
-    while (m < MAX_LINES && fgets(lines2[m], MAX_LEN, fp2)) m++;
+    while (n < MAX_LINES && !feof(fp1)) {
+        safe_getline(lines1[n], fp1);
+        if (lines1[n][0] != '\0') n++;
+    }
+    while (m < MAX_LINES && !feof(fp2)) {
+        safe_getline(lines2[m], fp2);
+        if (lines2[m][0] != '\0') m++;
+    }
     fclose(fp1);
     fclose(fp2);
 
@@ -65,38 +84,49 @@ void diff(const char* file1, const char* file2) {
             else if (strcmp(lines1[i-1], lines2[j-1]) == 0)
                 dp[i][j] = dp[i-1][j-1] + 1;
             else
-                dp[i][j] = dp[i-1][j] > dp[i][j-1] ? dp[i-1][j] : dp[i][j-1];
+                dp[i][j] = dp[i-1][j] > dp[i][j-1]
+                         ? dp[i-1][j]
+                         : dp[i][j-1];
         }
     }
 
     // 4) 역추적하며 diff 블록 수집
     int i = n, j = m;
-    int cs1=-1, cs2=-1, ce1=-1, ce2=-1;
+    int cs1 = -1, cs2 = -1, ce1 = -1, ce2 = -1;
     while (i > 0 && j > 0) {
         if (strcmp(lines1[i-1], lines2[j-1]) == 0) {
-            // 연속 변경 블록이 끝났다면 기록
             if (cs1 != -1) {
-                record_diff(cs1, "%d,%dc%d,%d\n", cs1+1, ce1, cs2+1, ce2);
-                for (int x = cs1; x < ce1; x++) record_diff(cs1, "< %s", lines1[x]);
+                record_diff(cs1, "%d,%dc%d,%d\n",
+                            cs1+1, ce1, cs2+1, ce2);
+                for (int x = cs1; x < ce1; x++)
+                    record_diff(cs1, "< %s", lines1[x]);
                 record_diff(cs1, "---\n");
-                for (int x = cs2; x < ce2; x++) record_diff(cs1, "> %s", lines2[x]);
+                for (int x = cs2; x < ce2; x++)
+                    record_diff(cs1, "> %s", lines2[x]);
                 cs1 = cs2 = ce1 = ce2 = -1;
             }
             i--; j--;
         }
         else if (dp[i][j] == dp[i-1][j-1]) {
-            // 교체(Changed) 구간
+            // 교체(Changed) 블록
             i--; j--;
-            if (cs1 == -1) cs1 = i, cs2 = j;
-            ce1 = i+1; ce2 = j+1;
+            if (cs1 == -1) {
+                cs1 = i;
+                cs2 = j;
+            }
+            ce1 = i+1;
+            ce2 = j+1;
         }
         else if (dp[i-1][j] >= dp[i][j-1]) {
             // 삭제(Delete)
             if (cs1 != -1) {
-                record_diff(cs1, "%d,%dc%d,%d\n", cs1+1, ce1, cs2+1, ce2);
-                for (int x = cs1; x < ce1; x++) record_diff(cs1, "< %s", lines1[x]);
+                record_diff(cs1, "%d,%dc%d,%d\n",
+                            cs1+1, ce1, cs2+1, ce2);
+                for (int x = cs1; x < ce1; x++)
+                    record_diff(cs1, "< %s", lines1[x]);
                 record_diff(cs1, "---\n");
-                for (int x = cs2; x < ce2; x++) record_diff(cs1, "> %s", lines2[x]);
+                for (int x = cs2; x < ce2; x++)
+                    record_diff(cs1, "> %s", lines2[x]);
                 cs1 = cs2 = ce1 = ce2 = -1;
             }
             i--;
@@ -104,17 +134,21 @@ void diff(const char* file1, const char* file2) {
         } else {
             // 추가(Add)
             if (cs1 != -1) {
-                record_diff(cs1, "%d,%dc%d,%d\n", cs1+1, ce1, cs2+1, ce2);
-                for (int x = cs1; x < ce1; x++) record_diff(cs1, "< %s", lines1[x]);
+                record_diff(cs1, "%d,%dc%d,%d\n",
+                            cs1+1, ce1, cs2+1, ce2);
+                for (int x = cs1; x < ce1; x++)
+                    record_diff(cs1, "< %s", lines1[x]);
                 record_diff(cs1, "---\n");
-                for (int x = cs2; x < ce2; x++) record_diff(cs1, "> %s", lines2[x]);
+                for (int x = cs2; x < ce2; x++)
+                    record_diff(cs1, "> %s", lines2[x]);
                 cs1 = cs2 = ce1 = ce2 = -1;
             }
             j--;
             record_diff(i, "%da%d\n> %s", i, j+1, lines2[j]);
         }
     }
-    // 나머지 삭제/추가
+
+    // 5) 남은 삭제/추가 처리
     while (i > 0) {
         i--;
         record_diff(i, "%dd0\n< %s", i+1, lines1[i]);
@@ -124,8 +158,9 @@ void diff(const char* file1, const char* file2) {
         record_diff(0, "0a%d\n> %s", j+1, lines2[j]);
     }
 
-    // 5) 순서대로 출력
+    // 6) 순서대로 출력
     qsort(diffs, diff_count, sizeof(DiffOutput), diff_cmp);
-    for (int k = 0; k < diff_count; k++)
+    for (int k = 0; k < diff_count; k++) {
         printf("%s", diffs[k].text);
+    }
 }
