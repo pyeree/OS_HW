@@ -4,24 +4,24 @@
 
 #include "header.h"
 
+// thread-worker arg
 typedef struct {
     DirectoryTree* tree;
     char dirname[MAX_NAME_LENGTH];
-    int mode;
+    int  mode;
 } MkdirThreadArg;
 
 /**
- * @brief 트리에 단일 디렉터리 노드를 추가 (in‐memory)
- * @return 0=성공, -1=실패
+ * @brief Create one directory in memory *and* on the real filesystem.
+ * @return 0 on success, –1 on failure
  */
 int my_mkdir(DirectoryTree* dTree, const char* dirname, int mode);
 
 /**
- * @brief mkdir 명령 전체 처리
- *   옵션: -p (parents), -m <mode>
- * @param tree         디렉터리 트리
- * @param arg          "[-p] [-m 700] name1 name2/child name3" 꼴
- * @param default_mode 기본 모드 (예: 0755)
+ * @brief Handle “mkdir [ -p ] [ -m MODE ] name…” all in one go.
+ *        Supports:
+ *           -p        create parent directories as needed
+ *           -m 700    set mode bits
  */
 void run_mkdir_multithread(DirectoryTree* tree, const char* arg, int default_mode);
 

@@ -13,17 +13,19 @@
 #define MAX_TOKENS 50
 #define BUF_SIZE   1024
 
-// ── memory‐only 트리에 디렉터리 노드 추가
+// ————————————————————————————————————————————————
+// Create one directory on disk *and* in‐memory…
 int my_mkdir(DirectoryTree* dTree, const char* dirname, int mode) {
-    // 1) OS 파일시스템에도 실제 생성 (optional)
+    // 1) real filesystem
     if (mkdir(dirname, mode) != 0 && errno != EEXIST) {
         perror("mkdir");
         return -1;
     }
 
-    // 2) in‐memory 트리에도 추가
+    // 2) now record in your tree
     TreeNode* New = malloc(sizeof(TreeNode));
     if (!New) { perror("malloc"); return -1; }
+
     time_t t; struct tm* now;
     time(&t); now = localtime(&t);
 
@@ -32,7 +34,7 @@ int my_mkdir(DirectoryTree* dTree, const char* dirname, int mode) {
     strncpy(New->name, dirname, MAX_NAME_LENGTH);
     New->name[MAX_NAME_LENGTH-1] = '\0';
     New->type   = 'd';
-    New->mode   = mode;
+    New->mode   = mode;       // store the actual bitmask
     New->size   = 4096;
     New->UID    = getuid();
     New->GID    = getgid();
@@ -42,6 +44,7 @@ int my_mkdir(DirectoryTree* dTree, const char* dirname, int mode) {
     New->minute = now->tm_min;
     New->parent = dTree->current;
 
+    // left/right = first-child / next-sibling
     if (!dTree->current->left) {
         dTree->current->left = New;
     } else {
@@ -52,25 +55,30 @@ int my_mkdir(DirectoryTree* dTree, const char* dirname, int mode) {
     return 0;
 }
 
-// ── -p 옵션용: "a/b/c" 경로상의 모든 디렉터리 순차 생성
-static int mkdir_parents(DirectoryTree* tree, const char* path, int mode) {
-    TreeNode* orig = tree->current;
+// ————————————————————————————————————————————————
+// helper for “mkdir -p a/b/c”
+static int mkdir_parents(DirectoryTree* tree,
+                         const char* path,
+                         int mode)
+{
+    TreeNode* save = tree->current;
     char buf[BUF_SIZE];
     strncpy(buf, path, sizeof(buf));
     buf[sizeof(buf)-1] = '\0';
 
     char* tok = strtok(buf, "/");
     while (tok) {
-        // in‐memory: 이미 있으면 건너뛰고, 없으면 my_mkdir
+        // find an existing child?
         TreeNode* child = tree->current->left;
-        while (child && !(child->type=='d' && strcmp(child->name, tok)==0))
+        while (child &&
+               !(child->type=='d' && strcmp(child->name, tok)==0))
             child = child->right;
         if (!child) {
             if (my_mkdir(tree, tok, mode) != 0) {
-                tree->current = orig;
+                tree->current = save;
                 return -1;
             }
-            // 방금 추가된 노드로 이동
+            // pick up the one we just made
             child = tree->current->left;
             while (child->right) child = child->right;
         }
@@ -78,84 +86,88 @@ static int mkdir_parents(DirectoryTree* tree, const char* path, int mode) {
         tok = strtok(NULL, "/");
     }
 
-    tree->current = orig;
+    tree->current = save;
     return 0;
 }
 
+// ─ thread worker
 static void* mkdir_thread_worker(void* arg) {
-    MkdirThreadArg* a = (MkdirThreadArg*)arg;
+    MkdirThreadArg* a = arg;
     my_mkdir(a->tree, a->dirname, a->mode);
     free(a);
     return NULL;
 }
 
-void run_mkdir_multithread(DirectoryTree* tree, const char* arg, int default_mode) {
+// ————————————————————————————————————————————————
+// run everything: parse -p, -m, then either serial (-p) or threaded
+void run_mkdir_multithread(DirectoryTree* tree,
+                           const char* arg,
+                           int default_mode)
+{
     if (!arg || !*arg) {
         printf("mkdir: missing operand\n");
         return;
     }
 
-    // 1) 토큰별 분리
+    // tokenize
     char buf[BUF_SIZE];
     strncpy(buf, arg, sizeof(buf));
     buf[sizeof(buf)-1] = '\0';
 
-    char* tokens[MAX_TOKENS] = {0};
-    int   ntok  = 0;
-    int   pflag = 0;
-    int   mode  = default_mode;
-
-    char* tok = strtok(buf, " ");
-    while (tok && ntok < MAX_TOKENS) {
-        if (strcmp(tok, "-p") == 0) {
+    char*  tokens[MAX_TOKENS] = {0};
+    int    ntok   = 0;
+    int    pflag  = 0;
+    int    mode   = default_mode;
+    char*  tk     = strtok(buf, " ");
+    while (tk && ntok < MAX_TOKENS) {
+        if (strcmp(tk, "-p") == 0) {
             pflag = 1;
         }
-        else if (strcmp(tok, "-m") == 0) {
+        else if (strcmp(tk, "-m") == 0) {
             char* mstr = strtok(NULL, " ");
             if (mstr) mode = strtol(mstr, NULL, 8);
         }
         else {
-            tokens[ntok++] = tok;
+            tokens[ntok++] = tk;
         }
-        tok = strtok(NULL, " ");
+        tk = strtok(NULL, " ");
     }
 
-    // 2) -p 없을 때 "/" 포함 경로는 에러
+    // if no -p, slash in name is an error
     for (int i = 0; i < ntok; i++) {
         if (!pflag && tokens[i] && strchr(tokens[i], '/')) {
-            printf("mkdir: cannot create directory '%s': No such file or directory\n", tokens[i]);
+            printf("mkdir: cannot create directory '%s': No such file or directory\n",
+                   tokens[i]);
             tokens[i] = NULL;
         }
     }
 
-    // 3) -p 옵션 처리 (단계별 생성)
+    // serial parent‐creation
     if (pflag) {
         for (int i = 0; i < ntok; i++) {
-            if (tokens[i]) {
+            if (tokens[i])
                 if (mkdir_parents(tree, tokens[i], mode) != 0)
                     printf("mkdir: failed to create '%s'\n", tokens[i]);
-            }
         }
         return;
     }
 
-    // 4) 그 외엔 멀티스레드로 개별 생성
-    pthread_t tids[MAX_TOKENS];
+    // threaded leaf‐only creation
+    pthread_t thr[MAX_TOKENS];
     int thcount = 0;
     for (int i = 0; i < ntok; i++) {
         if (!tokens[i]) continue;
         MkdirThreadArg* a = malloc(sizeof(*a));
-        a->tree = tree;
-        a->mode = mode;
+        a->tree  = tree;
+        a->mode  = mode;
         strncpy(a->dirname, tokens[i], MAX_NAME_LENGTH);
         a->dirname[MAX_NAME_LENGTH-1] = '\0';
-        if (pthread_create(&tids[thcount], NULL, mkdir_thread_worker, a) == 0)
+        if (pthread_create(&thr[thcount], NULL, mkdir_thread_worker, a) == 0)
             thcount++;
         else {
             perror("pthread_create");
             free(a);
         }
     }
-    for (int i = 0; i < thcount; i++)
-        pthread_join(tids[i], NULL);
+    while (thcount--) pthread_join(thr[thcount], NULL);
 }
