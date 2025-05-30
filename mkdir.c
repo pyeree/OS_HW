@@ -13,7 +13,7 @@
 #define BUF_SIZE   1024
 
 /**
- * @brief 메모리 트리에만 디렉터리를 추가합니다 
+ * @brief 메모리 트리에만 디렉터리를 추가 (실제 디스크에는 만들지 않음)
  */
 int my_mkdir(DirectoryTree* dTree, const char* dirname, int mode) {
     TreeNode* New = malloc(sizeof(TreeNode));
@@ -27,7 +27,7 @@ int my_mkdir(DirectoryTree* dTree, const char* dirname, int mode) {
     strncpy(New->name, dirname, MAX_NAME_LENGTH);
     New->name[MAX_NAME_LENGTH-1] = '\0';
     New->type    = 'd';
-    New->mode    = mode;
+    New->mode    = mode;    // 이제 mode는 '700', '755' 같은 세 자리 그대로 저장
     New->size    = 4096;
     New->UID     = getuid();
     New->GID     = getgid();
@@ -48,7 +48,7 @@ int my_mkdir(DirectoryTree* dTree, const char* dirname, int mode) {
 }
 
 /**
- * @brief -p 옵션: "a/b/c" 같은 경로상의 모든 디렉터리를 순차적으로 메모리에만 생성
+ * @brief -p 옵션: 경로상의 모든 디렉터리를 순차 생성
  */
 static int mkdir_parents(DirectoryTree* tree, const char* path, int mode) {
     TreeNode* save = tree->current;
@@ -78,7 +78,7 @@ static int mkdir_parents(DirectoryTree* tree, const char* path, int mode) {
 }
 
 /**
- * @brief 멀티스레드 워커: my_mkdir 호출
+ * @brief 스레드 워커: my_mkdir 호출
  */
 static void* mkdir_thread_worker(void* arg) {
     MkdirThreadArg* a = arg;
@@ -88,7 +88,7 @@ static void* mkdir_thread_worker(void* arg) {
 }
 
 /**
- * @brief 전체 mkdir 명령 처리: 옵션 -p, -m <mode> 파싱 후 메모리 트리에만 생성
+ * @brief mkdir 명령 전체 처리: 옵션 -p, -m <mode> 지원
  */
 void run_mkdir_multithread(DirectoryTree* tree,
                            const char* arg,
@@ -99,7 +99,7 @@ void run_mkdir_multithread(DirectoryTree* tree,
         return;
     }
 
-    // 토큰화
+    // 1) 토큰화
     char buf[BUF_SIZE];
     strncpy(buf, arg, sizeof(buf));
     buf[sizeof(buf)-1] = '\0';
@@ -112,16 +112,21 @@ void run_mkdir_multithread(DirectoryTree* tree,
     while (tk && ntok < MAX_TOKENS) {
         if (strcmp(tk, "-p") == 0) {
             pflag = 1;
-        } else if (strcmp(tk, "-m") == 0) {
+        }
+        else if (strcmp(tk, "-m") == 0) {
             char* mstr = strtok(NULL, " ");
-            if (mstr) mode = strtol(mstr, NULL, 8);
-        } else {
+            if (mstr) {
+                // "700" 같은 문자열을 그대로 정수로 저장 (base 10)
+                mode = atoi(mstr);
+            }
+        }
+        else {
             tokens[ntok++] = tk;
         }
         tk = strtok(NULL, " ");
     }
 
-    // -p 없이 슬래시 포함된 이름은 에러
+    // 2) -p 없으면 경로 구분자 포함시 오류
     for (int i = 0; i < ntok; i++) {
         if (!pflag && tokens[i] && strchr(tokens[i], '/')) {
             printf("mkdir: cannot create directory '%s': No such file or directory\n",
@@ -130,7 +135,7 @@ void run_mkdir_multithread(DirectoryTree* tree,
         }
     }
 
-    // -p 옵션 처리 (동기)
+    // 3) -p 처리 (동기적)
     if (pflag) {
         for (int i = 0; i < ntok; i++) {
             if (tokens[i] && mkdir_parents(tree, tokens[i], mode) != 0) {
@@ -140,7 +145,7 @@ void run_mkdir_multithread(DirectoryTree* tree,
         return;
     }
 
-    // 멀티스레드로 개별 생성
+    // 4) 멀티스레드로 개별 생성
     pthread_t threads[MAX_TOKENS];
     int       thcount = 0;
     for (int i = 0; i < ntok; i++) {
@@ -150,6 +155,7 @@ void run_mkdir_multithread(DirectoryTree* tree,
         a->mode   = mode;
         strncpy(a->dirname, tokens[i], MAX_NAME_LENGTH);
         a->dirname[MAX_NAME_LENGTH-1] = '\0';
+
         if (pthread_create(&threads[thcount], NULL, mkdir_thread_worker, a) == 0)
             thcount++;
         else {
