@@ -18,6 +18,7 @@
 
 #define MAXB 1024
 
+
 typedef struct TreeNode {
 	char name[MAX_NAME_LENGTH];
 	int User_ID;
@@ -36,6 +37,10 @@ typedef struct TreeNode {
 	struct TreeNode* parent;
 	struct TreeNode* children;
 	struct TreeNode* next_sibling;
+	    // header.h 中 TreeNode 에 추가
+    char *content;    // 파일 내용 포인터, 디렉터리는 NULL
+    int   size;       // content 버퍼 길이
+
 } TreeNode;
 
 typedef struct DirectoryTree {

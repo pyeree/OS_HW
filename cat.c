@@ -1,116 +1,151 @@
 // cat.c
 
 #include "cat.h"
-#include <fcntl.h>
+#include "header.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <time.h>
 #include <unistd.h>
 
-#define MAXB 1024
-#define MAX_NAME_LENGTH 255
+#define CHUNK 1024
 
+// ───────────────────────────────────────────────────────
+// 1) 절대/상대 경로에서 파일 노드 검색
+static TreeNode* search_path(DirectoryTree *dTree, const char *path) {
+    TreeNode *cur = (path[0]=='/') ? dTree->root : dTree->current;
+    char buf[MAX_PATH_LENGTH];
+    strncpy(buf, path + (path[0]=='/'?1:0), sizeof(buf));
+    buf[sizeof(buf)-1] = '\0';
+    for (char *tok = strtok(buf, "/"); tok; tok = strtok(NULL, "/")) {
+        TreeNode *c = cur->left;
+        while (c && strcmp(c->name, tok) != 0) c = c->right;
+        if (!c) return NULL;
+        cur = c;
+    }
+    return (cur->type=='f') ? cur : NULL;
+}
+
+// ───────────────────────────────────────────────────────
+// 2) 트리에서 node 분리(detach)
+static void detach_node(TreeNode *node) {
+    TreeNode *p = node->parent;
+    if (!p) return;
+    if (p->left == node) {
+        p->left = node->right;
+    } else {
+        TreeNode *it = p->left;
+        while (it->right && it->right != node) it = it->right;
+        if (it->right) it->right = node->right;
+    }
+    node->parent = NULL;
+    node->right  = NULL;
+}
+
+// ───────────────────────────────────────────────────────
+// 3) 트리에 새 파일 노드 추가 (마지막 자식으로)
+static void add_file_node(DirectoryTree *dTree,
+                          const char *name,
+                          char *content,
+                          int size) {
+    TreeNode *n = malloc(sizeof(TreeNode));
+    if (!n) { perror("malloc"); return; }
+    strncpy(n->name, name, MAX_NAME_LENGTH);
+    n->name[MAX_NAME_LENGTH-1] = '\0';
+    n->type    = 'f';
+    n->mode    = 0644;
+    n->size    = size;
+    n->content = content;
+    n->left = NULL;
+    n->right = NULL;
+    n->parent = NULL;
+    // attach
+    TreeNode *cur = dTree->current;
+    if (!cur->left) {
+        cur->left = n;
+        n->parent = cur;
+    } else {
+        TreeNode *it = cur->left;
+        while (it->right) it = it->right;
+        it->right = n;
+        n->parent = cur;
+    }
+}
+
+// ───────────────────────────────────────────────────────
+// 4) 기존 파일 노드 free
+static void free_file_node(TreeNode *node) {
+    if (node->content) free(node->content);
+    free(node);
+}
+
+// ───────────────────────────────────────────────────────
+// 5) cat 명령 전체 구현
 int cat(DirectoryTree *dTree, char *cmd) {
-    char *str;
-
+    char *filename;
+    int   mode;  // 0 = create/overwrite, 1 = print, 2 = print with line#, 
     if (strcmp(cmd, ">") == 0) {
-        str = strtok(NULL, " ");
-        Concatenate(dTree, str, 0);
-        return 0;
+        mode = 0;
+        filename = strtok(NULL, " ");
     } else if (strcmp(cmd, "-n") == 0) {
-        str = strtok(NULL, " ");
-        Concatenate(dTree, str, 2);
+        mode = 2;
+        filename = strtok(NULL, " ");
     } else {
-        Concatenate(dTree, cmd, 1);
+        mode = 1;
+        filename = cmd;
+    }
+    if (!filename) {
+        printf("cat: missing file operand\n");
+        return 1;
     }
 
-    return 1;
-}
-
-int Concatenate(DirectoryTree *dTree, char *fName, int o) {
-    FILE *fp;
-    char BUF[MAXB];
-    int count = 1;
-
-    if (o != 0) {
-        fp = fopen(fName, "r");
-        if (fp == NULL) {
-            printf("cat: %s: No such file\n", fName);
-            return 1;
-        }
-        while (fgets(BUF, sizeof(BUF), fp)) {
-            if (o == 2) {
-                printf("%d  ", count++);
+    if (mode == 0) {
+        // ─ overwrite: stdin → 메모리
+        int cap = CHUNK;
+        char *buf = malloc(cap);
+        if (!buf) { perror("malloc"); return 1; }
+        int total = 0, r;
+        char tmp[CHUNK];
+        while ((r = read(STDIN_FILENO, tmp, CHUNK)) > 0) {
+            if (total + r > cap) {
+                cap = cap * 2 + r;
+                buf = realloc(buf, cap);
+                if (!buf) { perror("realloc"); return 1; }
             }
-            fputs(BUF, stdout);
+            memcpy(buf + total, tmp, r);
+            total += r;
         }
-        fclose(fp);
-    } else {
-        int fd = open(fName, O_WRONLY | O_CREAT | O_TRUNC,
-                      S_IRUSR | S_IWUSR);
-        if (fd == -1) {
-            perror("open");
-            return 1;
+        if (r < 0) { perror("read"); free(buf); return 1; }
+        // 기존 파일 노드 제거
+        TreeNode *old = search_path(dTree, filename);
+        if (old) {
+            detach_node(old);
+            free_file_node(old);
         }
-        char buf[1000];
-        int n;
-        while ((n = read(STDIN_FILENO, buf, sizeof(buf))) > 0) {
-            if (write(fd, buf, n) != n) {
-                perror("write");
-                close(fd);
-                return 1;
-            }
-        }
-        if (n == -1) {
-            perror("read");
-            close(fd);
-            return 1;
-        }
-        int k = lseek(fd, 0, SEEK_END);
-        if (k == -1) {
-            perror("lseek");
-            close(fd);
-            return 1;
-        }
-        close(fd);
-        Mkfile(dTree, fName, 'f', k);
+        // 새 노드 추가
+        add_file_node(dTree, filename, buf, total);
+        return 0;
     }
-    return 0;
-}
 
-int Mkfile(DirectoryTree *dTree, char *dName, char type, int k) {
-    TreeNode *New = malloc(sizeof(TreeNode));
-    TreeNode *tmpN = NULL;
-    time_t ltime;
-    struct tm *Now;
+    // ─ display
+    TreeNode *node = search_path(dTree, filename);
+    if (!node) {
+        printf("cat: %s: No such file\n", filename);
+        return 1;
+    }
+    if (!node->content || node->size == 0) return 0;
 
-    time(&ltime);
-    Now = localtime(&ltime);
-
-    New->left = NULL;
-    New->right = NULL;
-    strncpy(New->name, dName, MAX_NAME_LENGTH);
-    New->type = 'f';
-    New->mode = 0644;
-    New->size = k;
-    New->UID  = 1234;
-    New->GID  = 1234;
-    New->month   = Now->tm_mon + 1;
-    New->day     = Now->tm_mday;
-    New->hour    = Now->tm_hour + 9;
-    New->minute  = Now->tm_min;
-    New->parent  = dTree->current;
-
-    if (dTree->current->left == NULL) {
-        dTree->current->left = New;
-    } else {
-        tmpN = dTree->current->left;
-        while (tmpN->right != NULL)
-            tmpN = tmpN->right;
-        tmpN->right = New;
+    int lineno = 1;
+    char *p = node->content;
+    char *end = p + node->size;
+    while (p < end) {
+        // 한 줄 분리
+        char *nl = memchr(p, '\n', end - p);
+        int len = nl ? (nl - p + 1) : (end - p);
+        if (mode == 2) {
+            printf("%6d  ", lineno++);
+        }
+        fwrite(p, 1, len, stdout);
+        p += len;
     }
     return 0;
 }
