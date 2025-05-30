@@ -39,10 +39,12 @@ typedef struct TreeNode {
 	struct TreeNode* next_sibling;
 	    // header.h 中 TreeNode 에 추가
     char *content;    // 파일 내용 포인터, 디렉터리는 NULL    
+	
 
 } TreeNode;
 
 typedef struct DirectoryTree {
+	
 	TreeNode* root;
 	TreeNode* current;
 	char current_path[MAX_NAME_LENGTH * 10];
