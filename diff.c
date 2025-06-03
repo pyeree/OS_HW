@@ -77,7 +77,6 @@ void diff(const char* file1, const char* file2) {
     }
 
     int i = 0, j = 0;
-    int cs1 = -1, cs2 = -1;
     while (i < n || j < m) {
         if (i < n && j < m && strcmp(lines1[i], lines2[j]) == 0) {
             i++; j++; 
