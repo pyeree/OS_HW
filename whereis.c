@@ -9,7 +9,6 @@ void whereis_helper(TreeNode *node, const char *target, char *path) {
 
     char new_path[1024];
 
-    // 루트 노드는 path 그대로 유지
     if (node->parent == NULL || strcmp(node->name, "") == 0) {
         strcpy(new_path, "/");
     } else {
@@ -19,9 +18,17 @@ void whereis_helper(TreeNode *node, const char *target, char *path) {
             snprintf(new_path, sizeof(new_path), "%s/%s", path, node->name);
     }
 
-    if (strcmp(node->name, target) == 0) {
-        printf("Found: %s\n", new_path);
+    if (node->type == 'd' && strcmp(node->name, target) == 0) {
+        printf("%s\n", new_path); 
         return;
+    }
+
+    if (node->type != 'd' && strcmp(node->name, target) == 0) {
+        char *dot_pos = strrchr(node->name, '.');
+        if (dot_pos) {
+            *dot_pos = '\0'; 
+        }
+        printf("%s:\n", node->name); 
     }
 
     whereis_helper(node->left, target, new_path);

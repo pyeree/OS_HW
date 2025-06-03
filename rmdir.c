@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 
 #define MAX_PARTS     100
 #define MAX_PART_LEN  256
@@ -143,3 +144,60 @@ int remove_dir_p_path(DirectoryTree* dTree, const char* path) {
     dTree->current = orig;
     return 0;
 }
+
+void* rmdir_thread_worker(void* arg) {
+    RmdirThreadArg* a = arg;
+    if (a->pflag)
+        remove_dir_p_path(a->tree, a->path);
+    else
+        remove_dir_path(a->tree, a->path);
+    free(a);
+    return NULL;
+}
+
+void run_rmdir_multithread(DirectoryTree* tree, const char* arg) {
+    if (!arg || !*arg) {
+        printf("rmdir: missing operand\n");
+        return;
+    }
+
+    char buf[BUF_SIZE];
+    strncpy(buf, arg, sizeof(buf));
+    buf[sizeof(buf)-1] = '\0';
+
+    char* tokens[MAX_TOKENS] = {0};
+    int ntok = 0;
+    int pflag = 0;
+    char* tk = strtok(buf, " ");
+    while (tk && ntok < MAX_TOKENS) {
+        if (strcmp(tk, "-p") == 0) {
+            pflag = 1;
+        }
+        else {
+            tokens[ntok++] = tk;
+        }
+        tk = strtok(NULL, " ");
+    }
+
+    pthread_t threads[MAX_TOKENS];
+    int thcount = 0;
+    for (int i = 0; i < ntok; i++) {
+        if (!tokens[i]) continue;
+        RmdirThreadArg* a = malloc(sizeof(*a));
+        a->tree  = tree;
+        a->pflag = pflag;
+        strncpy(a->path, tokens[i], BUF_SIZE);
+        a->path[BUF_SIZE - 1] = '\0';
+
+        if (pthread_create(&threads[thcount], NULL, rmdir_thread_worker, a) == 0)
+            thcount++;
+        else {
+            perror("pthread_create");
+            free(a);
+        }
+    }
+
+    for (int i = 0; i < thcount; i++)
+        pthread_join(threads[i], NULL);
+}
+

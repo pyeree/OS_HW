@@ -104,31 +104,13 @@ int main() {
                 printf("mkdir: missing operand\n");
             }
         }else if (strcmp(cmd, "rmdir") == 0) {
-            char* opt = strtok(NULL, " ");
-            if (opt && strcmp(opt, "-p") == 0) {
-                char* path = strtok(NULL, " ");
-                if (path) {
-                    remove_dir_p_path(&dTree, path);
+            char* args = strtok(NULL, "");
+            if (args && *args) {
+                    run_rmdir_multithread(&dTree, args);
                     save_tree_to_file(&dTree, SAVE_FILE);
-                } else {
-                    printf("rmdir -p: missing operand\n");
-                }
-            }
-            else {
-                // rmdir dir1 dir2 ...
-                // opt이 NULL이면 missing, 아니면 opt부터 토큰 루프
-                if (!opt) {
+            } else {
                     printf("rmdir: missing operand\n");
-                } else {
-                    char* tok = opt;
-                    // opt 뒤에 더 있을 수 있으니 strtok(NULL)로 이어서
-                    while (tok) {
-                        remove_dir_path(&dTree, tok);
-                        tok = strtok(NULL, " ");
-                    }
-                    save_tree_to_file(&dTree, SAVE_FILE);
                 }
-            }
         } else if (strcmp(cmd, "mv") == 0) {
             char* src  = strtok(NULL, " ");
             char* dest = strtok(NULL, " ");
