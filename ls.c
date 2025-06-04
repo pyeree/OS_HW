@@ -5,9 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-/**
- * @brief 노드의 mode 숫자(e.g. 755)를 "drwxr-xr-x" 문자열로 변환
- */
+//노드의 mode 숫자(e.g. 755)를 "drwxr-xr-x" 문자열로 변환
 static void format_mode(const TreeNode *n, char *out) {
     out[0] = (n->type == 'd') ? 'd' : '-';
     int mode = n->mode;             // e.g. 0755
@@ -24,9 +22,7 @@ static void format_mode(const TreeNode *n, char *out) {
     out[10] = '\0';
 }
 
-/**
- * @brief 단일 엔트리를 long format으로 출력
- */
+// 단일 엔트리를 long format으로 출력
 static void print_long(const TreeNode *n) {
     char mode_str[11];
     format_mode(n, mode_str);
@@ -42,22 +38,27 @@ static void print_long(const TreeNode *n) {
 }
 
 void ls(DirectoryTree* dTree) {
-    TreeNode* c = dTree->current->left;
+    TreeNode* c = dTree->current->left; // 현재 디렉터리의 첫 번째 자식 노드
+
+    // 현재 디렉터리에 자식(파일 또는 하위 디렉터리)이 없는 경우
     if (!c) {
         printf("directory is empty\n");
         return;
     }
+
     int col = 0;
+
+    // 'c'가 NULL이 아닐 때까지 반복 (모든 자식 노드를 순회)
     while (c) {
-        printf("%-16s", c->name);
-        if (++col % 5 == 0) printf("\n");
+        printf("%-16s", c->name); // 현재 자식 노드의 이름을 왼쪽 정렬하여 16칸 너비로 출력
+        if (++col % 5 == 0) printf("\n"); // 5배수마다 줄바꿈
         c = c->right;
     }
-    if (col % 5) printf("\n");
+    if (col % 5) printf("\n"); // 마지막 줄 5의 배수가 아닐 경우 줄바꿈
 }
 
 void ls_a(DirectoryTree* dTree) {
-    // 항상 "."과 ".."부터
+    // "."과 ".."부터 출력
     printf("%-16s%-16s", ".", "..");
     TreeNode* c = dTree->current->left;
     int col = 2;
@@ -82,7 +83,7 @@ void ls_l(DirectoryTree* dTree) {
 }
 
 void ls_al(DirectoryTree* dTree) {
-    // "."과 ".."을 long format으로
+    // "."과 ".."을 long format으로 출력
     {
         TreeNode dot = { .name = ".", .type='d',
                         .mode=0755, .size=4096,
